@@ -1,0 +1,97 @@
+{% extends 'base.html' %}
+
+{% block title %}Add Service{% endblock %}
+{% block page_title %}Add New Service{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+    <div class="row justify-content-center">
+        <div class="col-12 col-lg-10">
+            <div class="card shadow rounded-4 px-4 py-4 mb-4">
+                <h4 class="fw-semibold mb-4">Add New Service</h4>
+                <form method="post" autocomplete="off">
+                    {% csrf_token %}
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="service_name" class="form-label">Service Name:</label>
+                            <input type="text" class="form-control" id="service_name" name="service_name" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="category" class="form-label">Category:</label>
+                            <select class="form-select" id="category" name="category" required>
+                                <option value="" selected disabled>Choose...</option>
+                                <option value="Tax">Tax</option>
+                                <option value="Registration">Registration</option>
+                                <option value="Consultancy">Consultancy</option>
+                                <!-- Add more categories here -->
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="base_price" class="form-label">Base Price:</label>
+                            <input type="number" class="form-control" id="base_price" name="base_price" min="0" step="any" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="description" class="form-label">Description:</label>
+                            <input type="text" class="form-control" id="description" name="description">
+                        </div>
+                    </div>
+                    <div class="mt-4 text-start">
+                        <button type="submit" class="btn btn-primary px-5 py-2" style="font-size:1.1rem;">
+                            Add Service
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Available Services Section -->
+            <div>
+                <h4 class="fw-semibold mb-3">Available Services</h4>
+                {% if services %}
+                <div class="row g-3">
+                    {% for s in services %}
+                    <div class="col-12">
+                        <div class="card shadow-sm border-0 mb-2 p-3 d-flex flex-row justify-content-between align-items-center" style="background:#fafbfc;">
+                            <div>
+                                <div class="fw-bold fs-5">{{ s.name }}</div>
+                                <div class="text-muted small">
+                                    Category: {{ s.category }} | Base Price: ₹{{ s.base_price }}
+                                </div>
+                                {% if s.description %}
+                                    <div class="small text-black-50">{{ s.description }}</div>
+                                {% endif %}
+                            </div>
+                            <form method="post" action="{% url 'delete_service' s.id %}" class="mb-0 ms-2">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-outline-danger btn-sm" onclick="return confirm('Delete this service?')">
+                                    Delete
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="alert alert-info">No services available.</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.card {
+    border-radius: 14px;
+    border: none;
+}
+input, select {
+    border-radius: 7px !important;
+}
+label {
+    font-weight: 500;
+}
+@media (max-width: 700px) {
+    .card { padding: 10px 3vw !important; }
+    .col-md-6 { flex: 0 0 100%; max-width: 100%; }
+}
+</style>
+{% endblock %}

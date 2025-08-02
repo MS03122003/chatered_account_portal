@@ -1,0 +1,95 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-2">
+    <div class="row g-4">
+        <!-- Total Customer Box -->
+        <div class="col-12 col-sm-6 col-lg-3">
+            <a href="#" class="dashboard-box card text-center shadow-sm border-0 text-decoration-none text-white bg-customer">
+                <div class="card-body py-4">
+                    <div class="mb-2" style="font-size:2.2rem;">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <h4 class="card-title mb-1">Total Customers</h4>
+                    <p class="display-6 fw-bold">{{ total_customers }}</p>
+                </div>
+            </a>
+        </div>
+        <!-- Task Box -->
+        <div class="col-12 col-sm-6 col-lg-3">
+            <a href="#" class="dashboard-box card text-center shadow-sm border-0 text-decoration-none text-white bg-task">
+                <div class="card-body py-4">
+                    <div class="mb-2" style="font-size:2.2rem;">
+                        <i class="fas fa-tasks"></i>
+                    </div>
+                    <h4 class="card-title mb-1">Tasks</h4>
+                    <p class="display-6 fw-bold">{{ total_tasks }}</p>
+                </div>
+            </a>
+        </div>
+        <!-- Employee Box -->
+        <div class="col-12 col-sm-6 col-lg-3">
+            <a href="#" class="dashboard-box card text-center shadow-sm border-0 text-decoration-none text-white bg-employee">
+                <div class="card-body py-4">
+                    <div class="mb-2" style="font-size:2.2rem;">
+                        <i class="fas fa-user-tie"></i>
+                    </div>
+                    <h4 class="card-title mb-1">Employees</h4>
+                    <p class="display-6 fw-bold">{{ total_employees }}</p>
+                </div>
+            </a>
+        </div>
+        <!-- Payment Box -->
+        <div class="col-12 col-sm-6 col-lg-3">
+            <a href="#" class="dashboard-box card text-center shadow-sm border-0 text-decoration-none text-white bg-payment">
+                <div class="card-body py-4">
+                    <div class="mb-2" style="font-size:2.2rem;">
+                        <i class="fas fa-credit-card"></i>
+                    </div>
+                    <h4 class="card-title mb-1">Payments</h4>
+                    <p class="display-6 fw-bold">{{ total_payments }}</p>
+                </div>
+            </a>
+        </div>
+    </div>
+</div>
+
+<style>
+.dashboard-box {
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    user-select: none;
+    border-radius: 15px;
+}
+.dashboard-box:hover,
+.dashboard-box:focus {
+    text-decoration: none;
+    transform: translateY(-6px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+}
+
+/* Background colors */
+.bg-customer {
+    background-color: #1abc9c; /* turquoise */
+}
+.bg-task {
+    background-color: #f39c12; /* orange */
+}
+.bg-employee {
+    background-color: #3498db; /* blue */
+}
+.bg-payment {
+    background-color: #e74c3c; /* red */
+}
+
+/* Optionally adjust icon and text color if needed */
+.dashboard-box h4,
+.dashboard-box p,
+.dashboard-box i {
+    color: white;
+}
+</style>
+{% endblock %}
