@@ -1,0 +1,542 @@
+{% extends 'base.html' %}
+
+{% block title %}Customer Management{% endblock %}
+{% block page_title %}Customer Management{% endblock %}
+
+{% block content %}
+<div class="container-fluid my-4">
+    <!-- Messages -->
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <!-- Header Section -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold text-primary mb-0">
+            <i class="fas fa-users me-2"></i>Customer List
+        </h2>
+        <div class="d-flex gap-2">
+            <a href="{% url 'new_lead' %}" class="btn btn-success px-4">
+                <i class="fas fa-plus me-1"></i>Add New Customer
+            </a>
+            <button class="btn btn-outline-primary" onclick="exportCustomers()">
+                <i class="fas fa-download me-1"></i>Export
+            </button>
+        </div>
+    </div>
+
+    <!-- Search and Filter Section -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-body py-3">
+            <div class="row g-3 align-items-end">
+                <div class="col-md-4">
+                    <label for="searchInput" class="form-label">Search Customers:</label>
+                    <input type="text" class="form-control" id="searchInput" placeholder="Search by name, mobile, email...">
+                </div>
+                <div class="col-md-3">
+                    <label for="companyFilter" class="form-label">Filter by Company:</label>
+                    <select class="form-select" id="companyFilter">
+                        <option value="">All Companies</option>
+                        {% for customer in customers %}
+                            {% if customer.company_name %}
+                                <option value="{{ customer.company_name }}">{{ customer.company_name }}</option>
+                            {% endif %}
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="serviceFilter" class="form-label">Filter by Service:</label>
+                    <select class="form-select" id="serviceFilter">
+                        <option value="">All Services</option>
+                        <!-- This would be populated with services from backend -->
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button class="btn btn-outline-secondary w-100" onclick="clearFilters()">
+                        <i class="fas fa-times me-1"></i>Clear
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Customer Stats Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="card text-center border-0 shadow-sm bg-primary text-white">
+                <div class="card-body py-3">
+                    <h5 class="card-title mb-1">Total Customers</h5>
+                    <h3 class="fw-bold">{{ customers|length }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center border-0 shadow-sm bg-success text-white">
+                <div class="card-body py-3">
+                    <h5 class="card-title mb-1">Active Today</h5>
+                    <h3 class="fw-bold">{{ active_today|default:0 }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center border-0 shadow-sm bg-warning text-white">
+                <div class="card-body py-3">
+                    <h5 class="card-title mb-1">This Month</h5>
+                    <h3 class="fw-bold">{{ this_month|default:0 }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center border-0 shadow-sm bg-info text-white">
+                <div class="card-body py-3">
+                    <h5 class="card-title mb-1">Total Revenue</h5>
+                    <h3 class="fw-bold">₹{{ total_revenue|default:0 }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Customer Table -->
+    <div class="card shadow-sm">
+        <div class="card-header bg-light">
+            <h5 class="mb-0">
+                <i class="fas fa-table me-2"></i>Customer Details
+                <span class="badge bg-primary ms-2" id="customerCount">{{ customers|length }}</span>
+            </h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0" id="customerTable">
+                    <thead class="table-dark">
+                        <tr>
+                            <th scope="col">#</th>
+                            <th scope="col">Customer ID</th>
+                            <th scope="col">Name</th>
+                            <th scope="col">Mobile</th>
+                            <th scope="col">Email</th>
+                            <th scope="col">Company</th>
+                            <th scope="col">Services</th>
+                            <th scope="col">Total Amount</th>
+                            <th scope="col">Date Added</th>
+                            <th scope="col">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for customer in customers %}
+                        <tr class="customer-row" data-customer-id="{{ customer.id }}">
+                            <td>{{ forloop.counter }}</td>
+                            <td>
+                                <span class="fw-semibold text-primary">{{ customer.customer_id }}</span>
+                            </td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="avatar-circle me-2">
+                                        {{ customer.customer_name|first|upper }}
+                                    </div>
+                                    <div>
+                                        <div class="fw-semibold">{{ customer.customer_name }}</div>
+                                        {% if customer.father_name %}
+                                            <small class="text-muted">S/O: {{ customer.father_name }}</small>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <a href="tel:{{ customer.mobile_no }}" class="text-decoration-none">
+                                    <i class="fas fa-phone text-success me-1"></i>{{ customer.mobile_no }}
+                                </a>
+                            </td>
+                            <td>
+                                {% if customer.email_id %}
+                                    <a href="mailto:{{ customer.email_id }}" class="text-decoration-none">
+                                        {{ customer.email_id }}
+                                    </a>
+                                {% else %}
+                                    <span class="text-muted">Not provided</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if customer.company_name %}
+                                    <span class="badge bg-light text-dark">{{ customer.company_name }}</span>
+                                {% else %}
+                                    <span class="text-muted">Individual</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if customer.services %}
+                                    <div class="service-badges">
+                                        {% for service in customer.services %}
+                                            <span class="badge bg-primary me-1">{{ service.name }}</span>
+                                        {% endfor %}
+                                    </div>
+                                {% else %}
+                                    <span class="text-muted">No services</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="fw-bold text-success">₹{{ customer.total_amount|default:0 }}</span>
+                            </td>
+                            <td>
+                                <small class="text-muted">{{ customer.created_at|date:"d M, Y" }}</small>
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <button type="button" class="btn btn-outline-info" onclick="viewCustomer('{{ customer.id }}')" title="View Details">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-outline-warning" onclick="editCustomer('{{ customer.id }}')" title="Edit Customer">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-outline-danger" onclick="deleteCustomer('{{ customer.id }}', '{{ customer.customer_name }}')" title="Delete Customer">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="10" class="text-center py-4">
+                                <div class="text-muted">
+                                    <i class="fas fa-users fa-3x mb-3"></i>
+                                    <h5>No customers found</h5>
+                                    <p>Start by adding your first customer</p>
+                                    <a href="{% url 'new_lead' %}" class="btn btn-primary">
+                                        <i class="fas fa-plus me-1"></i>Add Customer
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pagination -->
+    {% if is_paginated %}
+    <nav aria-label="Customer pagination" class="mt-4">
+        <ul class="pagination justify-content-center">
+            {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page=1">&laquo; First</a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Previous</a>
+                </li>
+            {% endif %}
+
+            {% for num in page_obj.paginator.page_range %}
+                {% if page_obj.number == num %}
+                    <li class="page-item active">
+                        <span class="page-link">{{ num }}</span>
+                    </li>
+                {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                    </li>
+                {% endif %}
+            {% endfor %}
+
+            {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.next_page_number }}">Next</a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">Last &raquo;</a>
+                </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+</div>
+
+<!-- Customer Details Modal -->
+<div class="modal fade" id="customerModal" tabindex="-1" aria-labelledby="customerModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="customerModalLabel">Customer Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="customerModalBody">
+                <!-- Customer details will be loaded here -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteModalLabel">Confirm Delete</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center">
+                    <i class="fas fa-exclamation-triangle text-warning fa-3x mb-3"></i>
+                    <h5>Are you sure?</h5>
+                    <p>Do you want to delete customer <strong id="deleteCustomerName"></strong>?</p>
+                    <p class="text-muted">This action cannot be undone.</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteBtn">Delete Customer</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('searchInput');
+    const companyFilter = document.getElementById('companyFilter');
+    const serviceFilter = document.getElementById('serviceFilter');
+    const customerTable = document.getElementById('customerTable');
+    const customerRows = document.querySelectorAll('.customer-row');
+    
+    // Search functionality
+    searchInput.addEventListener('input', function() {
+        filterCustomers();
+    });
+    
+    // Filter functionality
+    companyFilter.addEventListener('change', function() {
+        filterCustomers();
+    });
+    
+    serviceFilter.addEventListener('change', function() {
+        filterCustomers();
+    });
+    
+    function filterCustomers() {
+        const searchTerm = searchInput.value.toLowerCase();
+        const companyFilterValue = companyFilter.value.toLowerCase();
+        const serviceFilterValue = serviceFilter.value.toLowerCase();
+        let visibleCount = 0;
+        
+        customerRows.forEach(function(row) {
+            const name = row.cells[2].textContent.toLowerCase();
+            const mobile = row.cells[3].textContent.toLowerCase();
+            const email = row.cells[4].textContent.toLowerCase();
+            const company = row.cells[5].textContent.toLowerCase();
+            const services = row.cells[6].textContent.toLowerCase();
+            
+            const matchesSearch = name.includes(searchTerm) || 
+                                mobile.includes(searchTerm) || 
+                                email.includes(searchTerm);
+            const matchesCompany = !companyFilterValue || company.includes(companyFilterValue);
+            const matchesService = !serviceFilterValue || services.includes(serviceFilterValue);
+            
+            if (matchesSearch && matchesCompany && matchesService) {
+                row.style.display = '';
+                visibleCount++;
+            } else {
+                row.style.display = 'none';
+            }
+        });
+        
+        // Update counter
+        document.getElementById('customerCount').textContent = visibleCount;
+    }
+});
+
+function clearFilters() {
+    document.getElementById('searchInput').value = '';
+    document.getElementById('companyFilter').value = '';
+    document.getElementById('serviceFilter').value = '';
+    
+    // Show all rows
+    document.querySelectorAll('.customer-row').forEach(function(row) {
+        row.style.display = '';
+    });
+    
+    // Update counter
+    document.getElementById('customerCount').textContent = document.querySelectorAll('.customer-row').length;
+}
+
+function viewCustomer(customerId) {
+    // Show loading
+    document.getElementById('customerModalBody').innerHTML = '<div class="text-center py-4"><div class="spinner-border" role="status"></div></div>';
+    
+    // Show modal
+    new bootstrap.Modal(document.getElementById('customerModal')).show();
+    
+    // Fetch customer details (you'll need to implement this endpoint)
+    fetch(`/customer/${customerId}/details/`)
+        .then(response => response.json())
+        .then(data => {
+            displayCustomerDetails(data);
+        })
+        .catch(error => {
+            document.getElementById('customerModalBody').innerHTML = 
+                '<div class="alert alert-danger">Error loading customer details</div>';
+        });
+}
+
+function displayCustomerDetails(customer) {
+    const modalBody = document.getElementById('customerModalBody');
+    modalBody.innerHTML = `
+        <div class="row g-3">
+            <div class="col-md-6">
+                <strong>Customer ID:</strong><br>
+                <span class="text-primary">${customer.customer_id}</span>
+            </div>
+            <div class="col-md-6">
+                <strong>Name:</strong><br>
+                ${customer.customer_name}
+            </div>
+            <div class="col-md-6">
+                <strong>Mobile:</strong><br>
+                <a href="tel:${customer.mobile_no}">${customer.mobile_no}</a>
+            </div>
+            <div class="col-md-6">
+                <strong>Email:</strong><br>
+                ${customer.email_id || 'Not provided'}
+            </div>
+            <div class="col-md-6">
+                <strong>Father's Name:</strong><br>
+                ${customer.father_name || 'Not provided'}
+            </div>
+            <div class="col-md-6">
+                <strong>Company:</strong><br>
+                ${customer.company_name || 'Individual'}
+            </div>
+            <div class="col-md-6">
+                <strong>PAN No:</strong><br>
+                ${customer.pan_no || 'Not provided'}
+            </div>
+            <div class="col-md-6">
+                <strong>Aadhar No:</strong><br>
+                ${customer.aadhar_card_no || 'Not provided'}
+            </div>
+            <div class="col-12">
+                <strong>Services:</strong><br>
+                ${customer.services && customer.services.length > 0 ? 
+                    customer.services.map(s => `<span class="badge bg-primary me-1">${s.name} (₹${s.price})</span>`).join('') : 
+                    'No services added'}
+            </div>
+            <div class="col-12">
+                <strong>Note:</strong><br>
+                ${customer.note || 'No notes'}
+            </div>
+        </div>
+    `;
+}
+
+function editCustomer(customerId) {
+    window.location.href = `/customer/${customerId}/edit/`;
+}
+
+function deleteCustomer(customerId, customerName) {
+    document.getElementById('deleteCustomerName').textContent = customerName;
+    const deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
+    deleteModal.show();
+    
+    document.getElementById('confirmDeleteBtn').onclick = function() {
+        // Send delete request
+        fetch(`/customer/${customerId}/delete/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'Content-Type': 'application/json',
+            },
+        })
+        .then(response => {
+            if (response.ok) {
+                location.reload();
+            } else {
+                alert('Error deleting customer');
+            }
+        })
+        .catch(error => {
+            alert('Error deleting customer');
+        });
+        
+        deleteModal.hide();
+    };
+}
+
+function exportCustomers() {
+    window.location.href = '/customers/export/';
+}
+</script>
+
+<style>
+.avatar-circle {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: #007bff;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 1.1rem;
+}
+
+.service-badges {
+    max-width: 150px;
+}
+
+.service-badges .badge {
+    font-size: 0.7rem;
+    margin-bottom: 2px;
+}
+
+.table th {
+    font-weight: 600;
+    border-bottom: 2px solid #dee2e6;
+}
+
+.table td {
+    vertical-align: middle;
+}
+
+.btn-group-sm .btn {
+    padding: 0.25rem 0.4rem;
+}
+
+.card-header {
+    border-bottom: 1px solid #dee2e6;
+}
+
+.customer-row:hover {
+    background-color: #f8f9fa;
+}
+
+@media (max-width: 768px) {
+    .table-responsive {
+        font-size: 0.875rem;
+    }
+    
+    .btn-group-sm .btn {
+        padding: 0.2rem 0.3rem;
+        font-size: 0.7rem;
+    }
+    
+    .service-badges {
+        max-width: 100px;
+    }
+    
+    .avatar-circle {
+        width: 32px;
+        height: 32px;
+        font-size: 0.9rem;
+    }
+}
+
+.spinner-border {
+    color: #007bff;
+}
+</style>
+{% endblock %}

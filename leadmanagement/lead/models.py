@@ -70,3 +70,4 @@ class LeadService(models.Model):
     
     class Meta:
         unique_together = ['lead', 'service']
+

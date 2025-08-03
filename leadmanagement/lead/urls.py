@@ -8,7 +8,9 @@ urlpatterns = [
     path('dashboard/', views.dashboard, name='dashboard'),
     
     path('new-lead/', views.new_lead, name='new_lead'),
-    path('customer/', views.customer, name='customer'),
+    path('customer/', views.customer,name='customer'),
+    path('customer/edit/<int:customer_id>/', views.edit_customer, name='edit_customer'),
+    path('customer/delete/<int:customer_id>/', views.delete_customer, name='delete_customer'),
     # service
     path('add-services/', views.add_services, name='add_services'),
     path('edit-service/<int:service_id>/', views.edit_service, name='edit_service'),
