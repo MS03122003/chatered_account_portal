@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Add Employee{% endblock %}
+
+{% block content %}
+<style>
+    .form-card { background: white; border-radius: 10px; box-shadow: 0 6px 20px rgba(0,0,0,0.07); padding: 2rem; max-width: 470px; margin: 2rem auto;}
+    .form-card h2 { margin-bottom: 1.5rem; }
+    label { font-weight: 600; margin-bottom: .5rem; display: block; }
+    .form-control { border: 2px solid #e9ecef; border-radius: 6px; padding: .6rem; width: 100%; margin-bottom: .7rem;}
+    .btn-main { background: #5e72e4; color: white; padding: .6rem 2.2rem; border: none; border-radius: 7px; font-weight: 600; }
+    .btn-main:hover { background: #324cdd; }
+    .alert { color: #dc3545; margin-bottom: 1rem; }
+</style>
+
+<div class="form-card">
+    <h2>Add Employee</h2>
+    {% if error_message %}
+        <div class="alert">{{ error_message }}</div>
+    {% endif %}
+    <form method="post" novalidate>
+        {% csrf_token %}
+        <div>
+            <label>Employee ID</label>
+            <input type="text" name="employee_id" value="{{ request.POST.employee_id|default_if_none:'' }}" class="form-control" required maxlength="20">
+        </div>
+        <div>
+            <label>Employee Name</label>
+            <input type="text" name="employee_name" value="{{ request.POST.employee_name|default_if_none:'' }}" class="form-control" required maxlength="100">
+        </div>
+        <div>
+            <label>Phone Number</label>
+            <input type="text" name="phone_number" value="{{ request.POST.phone_number|default_if_none:'' }}" class="form-control" required maxlength="15">
+        </div>
+        <div>
+            <label>Email</label>
+            <input type="email" name="email" value="{{ request.POST.email|default_if_none:'' }}" class="form-control" required>
+        </div>
+        <div>
+            <label>Address</label>
+            <textarea name="address" class="form-control" rows="2" required>{{ request.POST.address|default_if_none:'' }}</textarea>
+        </div>
+        <button type="submit" class="btn-main">Add Employee</button>
+        <a href="{% url 'employee_list' %}" class="btn btn-secondary ms-2">Cancel</a>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,84 @@
+{% extends 'base.html' %}
+
+{% block title %}Edit Service{% endblock %}
+{% block page_title %}Edit Service{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+    <div class="row justify-content-center">
+        <div class="col-12 col-lg-8">
+            <!-- Messages -->
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+            <div class="card shadow rounded-4 px-4 py-4">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h4 class="fw-semibold mb-0">Edit Service</h4>
+                    <a href="{% url 'add_services' %}" class="btn btn-outline-secondary">
+                        Back to Services
+                    </a>
+                </div>
+                
+                <form method="post" autocomplete="off">
+                    {% csrf_token %}
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="service_name" class="form-label">Service Name:</label>
+                            <input type="text" class="form-control" id="service_name" name="service_name" value="{{ service.name }}" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="category" class="form-label">Category:</label>
+                            <select class="form-select" id="category" name="category" required>
+                                <option value="Tax" {% if service.category == 'Tax' %}selected{% endif %}>Tax</option>
+                                <option value="Registration" {% if service.category == 'Registration' %}selected{% endif %}>Registration</option>
+                                <option value="Consultancy" {% if service.category == 'Consultancy' %}selected{% endif %}>Consultancy</option>
+                                <option value="Filing" {% if service.category == 'Filing' %}selected{% endif %}>Filing</option>
+                                <option value="Legal" {% if service.category == 'Legal' %}selected{% endif %}>Legal</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="base_price" class="form-label">Base Price:</label>
+                            <input type="number" class="form-control" id="base_price" name="base_price" value="{{ service.base_price }}" min="0" step="0.01" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="description" class="form-label">Description:</label>
+                            <input type="text" class="form-control" id="description" name="description" value="{{ service.description|default:'' }}">
+                        </div>
+                    </div>
+                    <div class="mt-4 text-start">
+                        <button type="submit" class="btn btn-success px-5 py-2" style="font-size:1.1rem;">
+                            Update Service
+                        </button>
+                        <a href="{% url 'add_services' %}" class="btn btn-secondary px-4 py-2 ms-2">
+                            Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.card {
+    border-radius: 14px;
+    border: none;
+}
+input, select {
+    border-radius: 7px !important;
+}
+label {
+    font-weight: 500;
+}
+@media (max-width: 700px) {
+    .card { padding: 10px 3vw !important; }
+    .col-md-6 { flex: 0 0 100%; max-width: 100%; }
+}
+</style>
+{% endblock %}

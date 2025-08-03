@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+
+{% block title %}Edit Employee{% endblock %}
+{% block page_title %}Edit Employee{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+  <div class="col-12 col-md-8 mx-auto bg-white rounded-4 shadow p-4">
+    <form method="post" autocomplete="off">
+      {% csrf_token %}
+      <div class="mb-3">
+        <label for="employee_name" class="form-label">Name</label>
+        <input type="text" class="form-control" id="employee_name" name="employee_name" value="{{ employee.employee_name }}" required>
+      </div>
+      <div class="mb-3">
+        <label for="phone_number" class="form-label">Phone</label>
+        <input type="text" class="form-control" id="phone_number" name="phone_number" value="{{ employee.phone_number }}" required>
+      </div>
+      <div class="mb-3">
+        <label for="email" class="form-label">Email</label>
+        <input type="email" class="form-control" id="email" name="email" value="{{ employee.email }}">
+      </div>
+      <div class="mb-3">
+        <label for="address" class="form-label">Address</label>
+        <textarea class="form-control" id="address" name="address" rows="3">{{ employee.address }}</textarea>
+      </div>
+      <button type="submit" class="btn btn-success">Update Employee</button>
+      <a href="{% url 'employee_list' %}" class="btn btn-secondary ms-2">Cancel</a>
+    </form>
+  </div>
+</div>
+{% endblock %}
