@@ -1,10 +1,15 @@
-{% extends 'base.html' %}
+.customer-row:hover {
+    background-color: #f8f9fa;
+}{% extends 'base.html' %}
 
 {% block title %}Customer Management{% endblock %}
 {% block page_title %}Customer Management{% endblock %}
 
 {% block content %}
 <div class="container-fluid my-4">
+    <!-- CSRF Token -->
+    {% csrf_token %}
+    
     <!-- Messages -->
     {% if messages %}
         {% for message in messages %}
@@ -53,7 +58,11 @@
                     <label for="serviceFilter" class="form-label">Filter by Service:</label>
                     <select class="form-select" id="serviceFilter">
                         <option value="">All Services</option>
-                        <!-- This would be populated with services from backend -->
+                        {% for customer in customers %}
+                            {% for service in customer.services %}
+                                <option value="{{ service.name }}">{{ service.name }}</option>
+                            {% endfor %}
+                        {% endfor %}
                     </select>
                 </div>
                 <div class="col-md-2">
@@ -66,7 +75,7 @@
     </div>
 
     <!-- Customer Stats Cards -->
-    <div class="row g-3 mb-4">
+    <!-- <div class="row g-3 mb-4">
         <div class="col-md-3">
             <div class="card text-center border-0 shadow-sm bg-primary text-white">
                 <div class="card-body py-3">
@@ -99,7 +108,7 @@
                 </div>
             </div>
         </div>
-    </div>
+    </div> -->
 
     <!-- Customer Table -->
     <div class="card shadow-sm">
@@ -217,43 +226,6 @@
             </div>
         </div>
     </div>
-
-    <!-- Pagination -->
-    {% if is_paginated %}
-    <nav aria-label="Customer pagination" class="mt-4">
-        <ul class="pagination justify-content-center">
-            {% if page_obj.has_previous %}
-                <li class="page-item">
-                    <a class="page-link" href="?page=1">&laquo; First</a>
-                </li>
-                <li class="page-item">
-                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Previous</a>
-                </li>
-            {% endif %}
-
-            {% for num in page_obj.paginator.page_range %}
-                {% if page_obj.number == num %}
-                    <li class="page-item active">
-                        <span class="page-link">{{ num }}</span>
-                    </li>
-                {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
-                    <li class="page-item">
-                        <a class="page-link" href="?page={{ num }}">{{ num }}</a>
-                    </li>
-                {% endif %}
-            {% endfor %}
-
-            {% if page_obj.has_next %}
-                <li class="page-item">
-                    <a class="page-link" href="?page={{ page_obj.next_page_number }}">Next</a>
-                </li>
-                <li class="page-item">
-                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">Last &raquo;</a>
-                </li>
-            {% endif %}
-        </ul>
-    </nav>
-    {% endif %}
 </div>
 
 <!-- Customer Details Modal -->
@@ -296,6 +268,24 @@
 </div>
 
 <script>
+// Get CSRF token
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+const csrftoken = getCookie('csrftoken');
+
 document.addEventListener('DOMContentLoaded', function() {
     const searchInput = document.getElementById('searchInput');
     const companyFilter = document.getElementById('companyFilter');
@@ -370,7 +360,7 @@ function viewCustomer(customerId) {
     // Show modal
     new bootstrap.Modal(document.getElementById('customerModal')).show();
     
-    // Fetch customer details (you'll need to implement this endpoint)
+    // Fetch customer details
     fetch(`/customer/${customerId}/details/`)
         .then(response => response.json())
         .then(data => {
@@ -433,7 +423,7 @@ function displayCustomerDetails(customer) {
 }
 
 function editCustomer(customerId) {
-    window.location.href = `/customer/${customerId}/edit/`;
+    window.location.href = `/customer/edit/${customerId}/`;
 }
 
 function deleteCustomer(customerId, customerName) {
@@ -443,18 +433,19 @@ function deleteCustomer(customerId, customerName) {
     
     document.getElementById('confirmDeleteBtn').onclick = function() {
         // Send delete request
-        fetch(`/customer/${customerId}/delete/`, {
+        fetch(`/customer/delete/${customerId}/`, {
             method: 'POST',
             headers: {
-                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'X-CSRFToken': csrftoken,
                 'Content-Type': 'application/json',
             },
         })
-        .then(response => {
-            if (response.ok) {
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
                 location.reload();
             } else {
-                alert('Error deleting customer');
+                alert('Error deleting customer: ' + data.error);
             }
         })
         .catch(error => {
@@ -508,10 +499,6 @@ function exportCustomers() {
 
 .card-header {
     border-bottom: 1px solid #dee2e6;
-}
-
-.customer-row:hover {
-    background-color: #f8f9fa;
 }
 
 @media (max-width: 768px) {

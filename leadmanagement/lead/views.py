@@ -1,5 +1,5 @@
 from django.shortcuts import render, redirect,get_object_or_404
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST
 from django.contrib.auth import logout as auth_logout
@@ -43,78 +43,6 @@ def login_view(request):
 def dashboard(request):
 
     return render(request, 'dashboard.html')
-
-# def new_lead(request):
-#     if request.method == 'POST':
-#         # Read form fields
-#         customer_id = request.POST.get('customer_id')
-#         customer_name = request.POST.get('customer_name')
-#         mobile_no = request.POST.get('mobile_no')
-#         father_name = request.POST.get('father_name')
-#         spouse_name = request.POST.get('spouse_name')
-#         mother_name = request.POST.get('mother_name')
-#         aadhar_card_no = request.POST.get('aadhar_card_no')
-#         pan_no = request.POST.get('pan_no')
-#         company_name = request.POST.get('company_name')
-#         email_id = request.POST.get('email_id')
-#         gst_no = request.POST.get('gst_no')
-#         cin_no = request.POST.get('cin_no')
-#         assigned_to = request.POST.get('assigned_to')
-#         delivery_date = request.POST.get('delivery_date') or None
-#         note = request.POST.get('note')
-#         upload_document = request.FILES.get('upload_document')
-
-#         try:
-#             lead = Lead.objects.create(
-#                 customer_id=customer_id,
-#                 customer_name=customer_name,
-#                 mobile_no=mobile_no,
-#                 father_name=father_name,
-#                 spouse_name=spouse_name,
-#                 mother_name=mother_name,
-#                 aadhar_card_no=aadhar_card_no,
-#                 pan_no=pan_no,
-#                 company_name=company_name,
-#                 email_id=email_id,
-#                 gst_no=gst_no,
-#                 cin_no=cin_no,
-#                 assigned_to=assigned_to,
-#                 delivery_date=delivery_date,
-#                 note=note,
-#                 upload_document=upload_document,
-#             )
-#             lead.save()
-
-#             # Handle selected services JSON if sent
-#             selected_services_json = request.POST.get('selected_services', '[]')
-#             if selected_services_json and selected_services_json != '[]':
-#                 import json
-#                 from .models import LeadService, Service
-#                 services_data = json.loads(selected_services_json)
-#                 for sdata in services_data:
-#                     service = Service.objects.get(id=sdata['id'])
-#                     LeadService.objects.create(
-#                         lead=lead,
-#                         service=service,
-#                         service_price=sdata['price']
-#                     )
-
-#             from django.contrib import messages
-#             messages.success(request, 'Lead added successfully!')
-#             return redirect('customer_list')  # Redirect to list
-
-#         except Exception as e:
-#             from django.contrib import messages
-#             messages.error(request, f"Error saving lead: {e}")
-
-#     # GET request
-#     from .models import Service
-#     services = Service.objects.all()
-#     return render(request, 'new_lead.html', {'services': services})
-
-# def customer(request):
-#     leads = Lead.objects.all()
-#     return render(request, 'customer.html', {'leads': leads})
 
 def add_services(request):
     services = Service.objects.all()
@@ -233,130 +161,6 @@ def delete_employee(request, employee_id):
     employee.delete()
     return redirect('employee_list')
 
-# #customer
-# def customer_detail(request, customer_id):
-#     """Return lead (customer) details as JSON"""
-#     customer = get_object_or_404(Lead, id=customer_id)
-
-#     # Prepare list of related services
-#     services = []
-#     customer_services = LeadService.objects.filter(lead=customer).select_related('service')
-#     for cs in customer_services:
-#         services.append({
-#             'name': cs.service.name,
-#             'price': float(cs.service_price)
-#         })
-
-#     data = {
-#         'customer_id': customer.customer_id,
-#         'customer_name': customer.customer_name,
-#         'mobile_no': customer.mobile_no,
-#         'email_id': customer.email_id or '',
-#         'father_name': customer.father_name or '',
-#         'spouse_name': customer.spouse_name or '',
-#         'mother_name': customer.mother_name or '',
-#         'company_name': customer.company_name or '',
-#         'pan_no': customer.pan_no or '',
-#         'aadhar_card_no': customer.aadhar_card_no or '',
-#         'gst_no': customer.gst_no or '',
-#         'cin_no': customer.cin_no or '',
-#         'note': customer.note or '',
-#         'services': services,
-#         'created_at': customer.created_at.strftime('%d %B, %Y'),
-#     }
-
-#     return JsonResponse(data)
-
-
-# @login_required
-# def edit_customer(request, customer_id):
-#     """Edit Lead (Customer) and update their services"""
-#     customer = get_object_or_404(Lead, id=customer_id)
-
-#     if request.method == 'POST':
-#         try:
-#             customer.customer_id = request.POST.get('customer_id')
-#             customer.customer_name = request.POST.get('customer_name')
-#             customer.mobile_no = request.POST.get('mobile_no')
-#             customer.father_name = request.POST.get('father_name', '')
-#             customer.spouse_name = request.POST.get('spouse_name', '')
-#             customer.mother_name = request.POST.get('mother_name', '')
-#             customer.aadhar_card_no = request.POST.get('aadhar_card_no', '')
-#             customer.pan_no = request.POST.get('pan_no', '')
-#             customer.company_name = request.POST.get('company_name', '')
-#             customer.email_id = request.POST.get('email_id', '')
-#             customer.gst_no = request.POST.get('gst_no', '')
-#             customer.cin_no = request.POST.get('cin_no', '')
-#             customer.note = request.POST.get('note', '')
-
-#             # Handle file upload
-#             if 'upload_document' in request.FILES:
-#                 customer.upload_document = request.FILES['upload_document']
-
-#             customer.save()
-
-#             # Update LeadService relations
-#             selected_services_json = request.POST.get('selected_services', '[]')
-#             if selected_services_json and selected_services_json != '[]':
-#                 # Delete existing services
-#                 LeadService.objects.filter(lead=customer).delete()
-
-#                 services_data = json.loads(selected_services_json)
-#                 for service_data in services_data:
-#                     service_obj = Service.objects.get(id=service_data['id'])
-#                     LeadService.objects.create(
-#                         lead=customer,
-#                         service=service_obj,
-#                         service_price=float(service_data['price'])
-#                     )
-
-#             messages.success(request, f'Customer "{customer.customer_name}" has been updated successfully!')
-#             return redirect('customer_list')
-
-#         except Exception as e:
-#             messages.error(request, f'Error updating customer: {str(e)}')
-
-#     # For GET request, prepare current services & all services for form
-#     current_services = []
-#     customer_services = LeadService.objects.filter(lead=customer).select_related('service')
-#     for cs in customer_services:
-#         current_services.append({
-#             'id': cs.service.id,
-#             'name': cs.service.name,
-#             'price': float(cs.service_price)
-#         })
-
-#     services = Service.objects.all()
-
-#     context = {
-#         'customer': customer,
-#         'services': services,
-#         'current_services': json.dumps(current_services),  # JSON string for JS use in template
-#     }
-#     return render(request, 'edit_customer.html', context)
-
-
-# @require_POST
-# @csrf_exempt  # Optional; remove if you want csrf protection on delete
-# @login_required
-# def delete_customer(request, customer_id):
-#     """Delete lead (customer) and related lead services"""
-#     try:
-#         customer = get_object_or_404(Lead, id=customer_id)
-#         customer_name = customer.customer_name
-
-#         # Delete related LeadServices
-#         LeadService.objects.filter(lead=customer).delete()
-
-#         # Delete the customer itself
-#         customer.delete()
-
-#         messages.success(request, f'Customer "{customer_name}" has been deleted successfully!')
-#         return JsonResponse({'success': True})
-
-#     except Exception as e:
-#         return JsonResponse({'success': False, 'error': str(e)}, status=400)
-
 # Logout view (POST method preferred for logout)
 def logout_view(request):
     if request.method == 'POST':
@@ -429,15 +233,100 @@ def new_lead(request):
     return render(request, 'new_lead.html', {'services': services})
 
 
-
-
-
 def customer(request):
-    # Fetch all leads ordered by newest first
+    # Fetch all leads ordered by newest first with their related services
     leads = Lead.objects.all().order_by('-created_at')
-    return render(request, 'customer.html', {'leads': leads})
+    
+    # Prepare customer data with services and total amounts
+    customers = []
+    for lead in leads:
+        # Get services for this lead
+        lead_services = LeadService.objects.filter(lead=lead).select_related('service')
+        services = [{'name': ls.service.name, 'price': ls.service_price} for ls in lead_services]
+        
+        # Calculate total amount
+        total_amount = sum(service['price'] for service in services)
+        
+        # Create a customer dictionary with lead data and additional fields
+        customer = {
+            'id': lead.id,
+            'customer_id': lead.customer_id,
+            'customer_name': lead.customer_name,
+            'mobile_no': lead.mobile_no,
+            'email_id': lead.email_id,
+            'father_name': lead.father_name,
+            'spouse_name': lead.spouse_name,
+            'mother_name': lead.mother_name,
+            'aadhar_card_no': lead.aadhar_card_no,
+            'pan_no': lead.pan_no,
+            'company_name': lead.company_name,
+            'gst_no': lead.gst_no,
+            'cin_no': lead.cin_no,
+            'assigned_to': lead.assigned_to,
+            'delivery_date': lead.delivery_date,
+            'note': lead.note,
+            'upload_document': lead.upload_document,
+            'created_at': lead.created_at,
+            'services': services,
+            'total_amount': total_amount
+        }
+        customers.append(customer)
+    
+    # Calculate statistics
+    total_customers = len(customers)
+    today = timezone.now().date()
+    active_today = len([c for c in customers if c['created_at'].date() == today])
+    
+    # This month
+    start_of_month = today.replace(day=1)
+    this_month = len([c for c in customers if c['created_at'].date() >= start_of_month])
+    
+    # Total revenue
+    total_revenue = sum(c['total_amount'] for c in customers)
+    
+    context = {
+        'customers': customers,
+        'total_customers': total_customers,
+        'active_today': active_today,
+        'this_month': this_month,
+        'total_revenue': total_revenue
+    }
+    
+    return render(request, 'customer.html', context)
 
 
+def customer_detail(request, customer_id):
+    """Return lead (customer) details as JSON"""
+    customer = get_object_or_404(Lead, id=customer_id)
+
+    # Prepare list of related services
+    services = []
+    customer_services = LeadService.objects.filter(lead=customer).select_related('service')
+    for cs in customer_services:
+        services.append({
+            'name': cs.service.name,
+            'price': float(cs.service_price)
+        })
+
+    data = {
+        'customer_id': customer.customer_id,
+        'customer_name': customer.customer_name,
+        'mobile_no': customer.mobile_no,
+        'email_id': customer.email_id or '',
+        'father_name': customer.father_name or '',
+        'spouse_name': customer.spouse_name or '',
+        'mother_name': customer.mother_name or '',
+        'company_name': customer.company_name or '',
+        'pan_no': customer.pan_no or '',
+        'aadhar_card_no': customer.aadhar_card_no or '',
+        'gst_no': customer.gst_no or '',
+        'cin_no': customer.cin_no or '',
+        'note': customer.note or '',
+        'services': services,
+        'created_at': customer.created_at.strftime('%d %B, %Y'),
+    }
+
+    return JsonResponse(data)
 
 
 def edit_customer(request, customer_id):
@@ -477,7 +366,7 @@ def edit_customer(request, customer_id):
                     )
 
             messages.success(request, f'Customer "{customer.customer_name}" updated successfully!')
-            return redirect('customer_list')
+            return redirect('customer')
 
         except Exception as e:
             messages.error(request, f'Error updating customer: {str(e)}')
@@ -503,7 +392,6 @@ def edit_customer(request, customer_id):
 
 @require_POST
 @csrf_exempt  # Optionally remove @csrf_exempt for better security
-
 def delete_customer(request, customer_id):
     try:
         customer = get_object_or_404(Lead, id=customer_id)
