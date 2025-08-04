@@ -1,0 +1,152 @@
+{% extends 'base.html' %}
+
+{% block title %}Edit Task{% endblock %}
+{% block page_title %}Edit Task{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+    <div class="row justify-content-center">
+        <div class="col-12 col-lg-10">
+            <!-- Messages -->
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+            <div class="card shadow rounded-4 px-4 py-4 mb-4">
+                <h4 class="fw-semibold mb-4">Edit Task</h4>
+                <form method="post" autocomplete="off" id="taskForm">
+                    {% csrf_token %}
+                    <div class="row g-3">
+                        <!-- Assigned To -->
+                        <div class="col-md-6">
+                            <label for="assigned_to" class="form-label">Assigned To:</label>
+                            <select class="form-select" id="assigned_to" name="assigned_to" required>
+                                <option value="" disabled>Choose Employee...</option>
+                                {% for employee in employees %}
+                                <option value="{{ employee.id }}"
+                                    {% if task.assigned_to.id == employee.id %}selected{% endif %}>
+                                    {{ employee.employee_name }} ({{ employee.employee_id }})
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <!-- Customer Name -->
+                        <div class="col-md-6">
+                            <label for="customer_name" class="form-label">Customer Name:</label>
+                            <select class="form-select" id="customer_name" name="customer_name" required>
+                                <option value="" disabled>Choose Customer...</option>
+                                {% for customer in customers %}
+                                <option value="{{ customer.id }}"
+                                    {% if task.customer.id == customer.id %}selected{% endif %}>
+                                    {{ customer.customer_name }} ({{ customer.customer_id }})
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <!-- Delivery Date -->
+                        <div class="col-md-6">
+                            <label for="delivery_date" class="form-label">Delivery Date:</label>
+                            <input type="date" class="form-control" id="delivery_date" name="delivery_date"
+                                value="{{ task.delivery_date|date:'Y-m-d' }}" required>
+                        </div>
+                        <!-- Service Name -->
+                        <div class="col-md-6">
+                            <label for="service_name" class="form-label">Service Name:</label>
+                            <select class="form-select" id="service_name" name="service_name" required>
+                                <option value="" disabled>Choose Service...</option>
+                                {% for service in services %}
+                                <option value="{{ service.id }}" data-price="{{ service.base_price }}"
+                                    {% if task.service.id == service.id %}selected{% endif %}>
+                                    {{ service.name }} ({{ service.category }})
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <!-- Payment Amount -->
+                        <div class="col-md-6">
+                            <label for="payment_amount" class="form-label">Payment Amount:</label>
+                            <div class="input-group">
+                                <span class="input-group-text">₹</span>
+                                <input type="number" class="form-control" id="payment_amount" name="payment_amount"
+                                       min="0" step="0.01" placeholder="0.00"
+                                       value="{{ task.payment_amount }}" required>
+                            </div>
+                        </div>
+                        <!-- Payment Status -->
+                        <div class="col-md-6">
+                            <label class="form-label">Payment Status:</label>
+                            <div class="mt-2">
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="payment_status"
+                                        id="status_paid" value="paid"
+                                        {% if task.payment_status == 'paid' %}checked{% endif %}>
+                                    <label class="form-check-label text-success fw-semibold" for="status_paid">
+                                        <i class="fas fa-check-circle me-1"></i>Paid
+                                    </label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="payment_status"
+                                        id="status_pending" value="pending"
+                                        {% if task.payment_status == 'pending' %}checked{% endif %}>
+                                    <label class="form-check-label text-warning fw-semibold" for="status_pending">
+                                        <i class="fas fa-clock me-1"></i>Pending
+                                    </label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="payment_status"
+                                        id="status_balance" value="balance"
+                                        {% if task.payment_status == 'balance' %}checked{% endif %}>
+                                    <label class="form-check-label text-info fw-semibold" for="status_balance">
+                                        <i class="fas fa-balance-scale me-1"></i>Balance
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Balance Amount -->
+                        <div class="col-md-6" id="balance_amount_container" style="{% if task.payment_status == 'balance' %}display: block;{% else %}display: none;{% endif %}">
+
+                            <label for="balance_amount" class="form-label">Balance Amount:</label>
+                            <div class="input-group">
+                                <span class="input-group-text">₹</span>
+                                <input type="number" class="form-control" id="balance_amount" name="balance_amount"
+                                       min="0" step="0.01" placeholder="0.00"
+                                       value="{{ task.balance_amount }}">
+                            </div>
+                            <small class="form-text text-muted">
+                                Remaining amount to be paid by customer
+                            </small>
+                        </div>
+                        <!-- Task Notes/Description -->
+                        <div class="col-12">
+                            <label for="task_notes" class="form-label">Task Notes/Description:</label>
+                            <textarea class="form-control" id="task_notes" name="task_notes" rows="3"
+                                      placeholder="Additional notes or task description...">{{ task.task_notes }}</textarea>
+                        </div>
+                    </div>
+                    <!-- Task Summary (optional, re-implement JS if required) -->
+                    <!-- ...reuse summary code... -->
+                    <div class="mt-4 text-center">
+                        <button type="submit" class="btn btn-success px-5 py-2" style="font-size:1.1rem; font-weight:600;">
+                            <i class="fas fa-save me-2"></i>Update Task
+                        </button>
+                        <a href="{% url 'dashboard' %}" class="btn btn-secondary px-4 py-2 ms-2">
+                            <i class="fas fa-arrow-left me-2"></i>Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- (Optional) You may retain or adjust the confirmation modal and JS from the add_task form -->
+
+{% comment %}
+Copy your JavaScript and styles from add_task.html and update IDs/logic as needed for "Edit".
+{% endcomment %}
+{% endblock %}

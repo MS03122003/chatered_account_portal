@@ -256,6 +256,11 @@
                     <i class="fas fa-user-tie"></i> Add Employee
                 </button>
             </a>
+            <a href="{% url 'add_task' %}" class="text-decoration-none">
+                <button type="button" class="menu-btn {% if request.resolver_match.url_name == 'add_task' %}active{% endif %}">
+                    <i class="fas fa-tasks"></i> Add Task
+                </button>
+            </a>
         </div>
         <div class="sidebar-footer">
             <form action="{% url 'logout' %}" method="post">

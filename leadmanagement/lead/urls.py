@@ -23,4 +23,11 @@ urlpatterns = [
     path('employee_list/',views.employee_list, name='employee_list'),
     path('employee/edit/<int:employee_id>/', views.edit_employee, name='edit_employee'),
     path('employee/delete/<int:employee_id>/', views.delete_employee, name='delete_employee'),
+
+    path('add-task/', views.add_task, name='add_task'),
+    path('task-list/', views.task_list, name='task_list'),
+    path('task/edit/<int:task_id>/', views.edit_task, name='edit_task'),
+    path('task/delete/<int:task_id>/', views.delete_task, name='delete_task'),
+    path('task/detail/<int:task_id>/', views.task_detail, name='task_detail'),
+    path('task/update-status/<int:task_id>/', views.update_task_status, name='update_task_status'),
 ] 

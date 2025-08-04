@@ -10,7 +10,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth import logout as auth_logout
 from django.contrib import messages
 from django.core.exceptions import ValidationError
-from .models import Service, Lead, LeadService
+from .models import Service, Lead, LeadService,Task
 import json
 
 from django.shortcuts import render, get_object_or_404, redirect
@@ -24,6 +24,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 import json
 import csv
+
 
 
 
@@ -402,6 +403,208 @@ def delete_customer(request, customer_id):
 
         messages.success(request, f'Customer "{customer_name}" deleted successfully!')
         return JsonResponse({'success': True})
+
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=400)
+    
+# Task management views (NEW)
+def add_task(request):
+    if request.method == 'POST':
+        try:
+            # Get form data
+            assigned_to_id = request.POST.get('assigned_to')
+            customer_name_id = request.POST.get('customer_name')
+            service_name_id = request.POST.get('service_name')
+            delivery_date = request.POST.get('delivery_date')
+            payment_amount = request.POST.get('payment_amount')
+            payment_status = request.POST.get('payment_status')
+            balance_amount = request.POST.get('balance_amount', 0)
+            task_notes = request.POST.get('task_notes', '')
+
+            # Get objects
+            assigned_to = Employee.objects.get(id=assigned_to_id)
+            customer_name = Lead.objects.get(id=customer_name_id)
+            service_name = Service.objects.get(id=service_name_id)
+
+            # Create task
+            task = Task.objects.create(
+                assigned_to=assigned_to,
+                customer_name=customer_name,
+                service_name=service_name,
+                delivery_date=delivery_date,
+                payment_amount=payment_amount,
+                payment_status=payment_status,
+                balance_amount=balance_amount if payment_status == 'balance' else 0,
+                task_notes=task_notes
+            )
+
+            messages.success(request, f'Task {task.task_id} created successfully!')
+            return redirect('task_list')
+
+        except Exception as e:
+            messages.error(request, f'Error creating task: {str(e)}')
+
+    # GET request - load form data
+    employees = Employee.objects.all().order_by('employee_name')
+    customers = Lead.objects.all().order_by('customer_name')
+    services = Service.objects.all().order_by('name')
+
+    context = {
+        'employees': employees,
+        'customers': customers,
+        'services': services,
+    }
+    return render(request, 'add_task.html', context)
+
+def task_list(request):
+    # Get filter parameters
+    status_filter = request.GET.get('status', '')
+    employee_filter = request.GET.get('employee', '')
+    search_query = request.GET.get('search', '')
+
+    # Base queryset
+    tasks = Task.objects.select_related('assigned_to', 'customer_name', 'service_name').all()
+
+    # Apply filters
+    if status_filter:
+        tasks = tasks.filter(task_status=status_filter)
+    
+    if employee_filter:
+        tasks = tasks.filter(assigned_to_id=employee_filter)
+    
+    if search_query:
+        tasks = tasks.filter(
+            Q(task_id__icontains=search_query) |
+            Q(customer_name__customer_name__icontains=search_query) |
+            Q(service_name__name__icontains=search_query)
+        )
+
+    # Pagination
+    paginator = Paginator(tasks, 20)
+    page_number = request.GET.get('page')
+    tasks = paginator.get_page(page_number)
+
+    # Statistics
+    total_tasks = Task.objects.count()
+    completed_tasks = Task.objects.filter(task_status='completed').count()
+    pending_tasks = Task.objects.filter(task_status__in=['assigned', 'in_progress']).count()
+    overdue_tasks = Task.objects.filter(
+        delivery_date__lt=timezone.now().date(),
+        task_status__in=['assigned', 'in_progress', 'on_hold']
+    ).count()
+
+    # Get employees for filter dropdown
+    employees = Employee.objects.all().order_by('employee_name')
+
+    context = {
+        'tasks': tasks,
+        'employees': employees,
+        'status_filter': status_filter,
+        'employee_filter': employee_filter,
+        'search_query': search_query,
+        'total_tasks': total_tasks,
+        'completed_tasks': completed_tasks,
+        'pending_tasks': pending_tasks,
+        'overdue_tasks': overdue_tasks,
+    }
+    return render(request, 'task_list.html', context)
+
+def edit_task(request, task_id):
+    task = get_object_or_404(Task, id=task_id)
+    
+    if request.method == 'POST':
+        try:
+            # Update task fields
+            assigned_to_id = request.POST.get('assigned_to')
+            customer_name_id = request.POST.get('customer_name')
+            service_name_id = request.POST.get('service_name')
+            
+            task.assigned_to = Employee.objects.get(id=assigned_to_id)
+            task.customer_name = Lead.objects.get(id=customer_name_id)
+            task.service_name = Service.objects.get(id=service_name_id)
+            task.delivery_date = request.POST.get('delivery_date')
+            task.payment_amount = request.POST.get('payment_amount')
+            task.payment_status = request.POST.get('payment_status')
+            task.task_notes = request.POST.get('task_notes', '')
+            
+            # Handle balance amount
+            if task.payment_status == 'balance':
+                task.balance_amount = request.POST.get('balance_amount', 0)
+            else:
+                task.balance_amount = 0
+                
+            task.save()
+
+            messages.success(request, f'Task {task.task_id} updated successfully!')
+            return redirect('task_list')
+
+        except Exception as e:
+            messages.error(request, f'Error updating task: {str(e)}')
+
+    # GET request - load form data
+    employees = Employee.objects.all().order_by('employee_name')
+    customers = Lead.objects.all().order_by('customer_name')
+    services = Service.objects.all().order_by('name')
+
+    context = {
+        'task': task,
+        'employees': employees,
+        'customers': customers,
+        'services': services,
+    }
+    return render(request, 'edit_task.html', context)
+
+def task_detail(request, task_id):
+    """Return task details as JSON"""
+    task = get_object_or_404(Task, id=task_id)
+
+    data = {
+        'task_id': task.task_id,
+        'assigned_to': task.assigned_to.employee_name,
+        'customer_name': task.customer_name.customer_name,
+        'service_name': task.service_name.name,
+        'delivery_date': task.delivery_date.strftime('%Y-%m-%d'),
+        'payment_amount': float(task.payment_amount),
+        'payment_status': task.payment_status,
+        'balance_amount': float(task.balance_amount) if task.balance_amount else 0,
+        'task_notes': task.task_notes or '',
+        'task_status': task.task_status,
+        'created_at': task.created_at.strftime('%d %B, %Y'),
+        'is_overdue': task.is_overdue,
+    }
+
+    return JsonResponse(data)
+
+@require_POST
+@csrf_exempt
+def delete_task(request, task_id):
+    try:
+        task = get_object_or_404(Task, id=task_id)
+        task_id_str = task.task_id
+
+        task.delete()
+
+        messages.success(request, f'Task "{task_id_str}" deleted successfully!')
+        return JsonResponse({'success': True})
+
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=400)
+
+@require_POST
+@csrf_exempt
+def update_task_status(request, task_id):
+    try:
+        task = get_object_or_404(Task, id=task_id)
+        new_status = request.POST.get('status')
+        
+        if new_status in dict(Task.TASK_STATUS_CHOICES):
+            task.task_status = new_status
+            task.save()
+            
+            messages.success(request, f'Task {task.task_id} status updated to {new_status.title()}!')
+            return JsonResponse({'success': True})
+        else:
+            return JsonResponse({'success': False, 'error': 'Invalid status'}, status=400)
 
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)}, status=400)

@@ -1,0 +1,512 @@
+{% extends 'base.html' %}
+
+{% block title %}Add Task{% endblock %}
+{% block page_title %}Add New Task{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+    <div class="row justify-content-center">
+        <div class="col-12 col-lg-10">
+            <!-- Messages -->
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+            <div class="card shadow rounded-4 px-4 py-4 mb-4">
+                <h4 class="fw-semibold mb-4">Add New Task</h4>
+                <form method="post" autocomplete="off" id="taskForm">
+                    {% csrf_token %}
+                    <div class="row g-3">
+                        <!-- Assigned To -->
+                        <div class="col-md-6">
+                            <label for="assigned_to" class="form-label">Assigned To:</label>
+                            <select class="form-select" id="assigned_to" name="assigned_to" required>
+                                <option value="" selected disabled>Choose Employee...</option>
+                                {% for employee in employees %}
+                                <option value="{{ employee.id }}">{{ employee.employee_name }} ({{ employee.employee_id }})</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <!-- Customer Name -->
+                        <div class="col-md-6">
+                            <label for="customer_name" class="form-label">Customer Name:</label>
+                            <select class="form-select" id="customer_name" name="customer_name" required>
+                                <option value="" selected disabled>Choose Customer...</option>
+                                {% for customer in customers %}
+                                <option value="{{ customer.id }}">{{ customer.customer_name }} ({{ customer.customer_id }})</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <!-- Delivery Date -->
+                        <div class="col-md-6">
+                            <label for="delivery_date" class="form-label">Delivery Date:</label>
+                            <input type="date" class="form-control" id="delivery_date" name="delivery_date" required>
+                        </div>
+
+                        <!-- Service Name -->
+                        <div class="col-md-6">
+                            <label for="service_name" class="form-label">Service Name:</label>
+                            <select class="form-select" id="service_name" name="service_name" required>
+                                <option value="" selected disabled>Choose Service...</option>
+                                {% for service in services %}
+                                <option value="{{ service.id }}" data-price="{{ service.base_price }}">
+                                    {{ service.name }} ({{ service.category }})
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <!-- Payment Amount -->
+                        <div class="col-md-6">
+                            <label for="payment_amount" class="form-label">Payment Amount:</label>
+                            <div class="input-group">
+                                <span class="input-group-text">₹</span>
+                                <input type="number" class="form-control" id="payment_amount" name="payment_amount" 
+                                       min="0" step="0.01" placeholder="0.00" required>
+                            </div>
+                        </div>
+
+                        <!-- Payment Status -->
+                        <div class="col-md-6">
+                            <label class="form-label">Payment Status:</label>
+                            <div class="mt-2">
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="payment_status" 
+                                           id="status_paid" value="paid">
+                                    <label class="form-check-label text-success fw-semibold" for="status_paid">
+                                        <i class="fas fa-check-circle me-1"></i>Paid
+                                    </label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="payment_status" 
+                                           id="status_pending" value="pending">
+                                    <label class="form-check-label text-warning fw-semibold" for="status_pending">
+                                        <i class="fas fa-clock me-1"></i>Pending
+                                    </label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="payment_status" 
+                                           id="status_balance" value="balance">
+                                    <label class="form-check-label text-info fw-semibold" for="status_balance">
+                                        <i class="fas fa-balance-scale me-1"></i>Balance
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Balance Amount (Hidden by default) -->
+                        <div class="col-md-6" id="balance_amount_container" style="display: none;">
+                            <label for="balance_amount" class="form-label">Balance Amount:</label>
+                            <div class="input-group">
+                                <span class="input-group-text">₹</span>
+                                <input type="number" class="form-control" id="balance_amount" name="balance_amount" 
+                                       min="0" step="0.01" placeholder="0.00">
+                            </div>
+                            <small class="form-text text-muted">
+                                Remaining amount to be paid by customer
+                            </small>
+                        </div>
+
+                        <!-- Task Description/Notes -->
+                        <div class="col-12">
+                            <label for="task_notes" class="form-label">Task Notes/Description:</label>
+                            <textarea class="form-control" id="task_notes" name="task_notes" rows="3" 
+                                      placeholder="Additional notes or task description..."></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Task Summary -->
+                    <div class="mt-4 p-3 bg-light rounded-3" id="task_summary" style="display: none;">
+                        <h6 class="fw-semibold mb-2">Task Summary:</h6>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <small class="text-muted">Employee:</small>
+                                <div id="summary_employee" class="fw-semibold">-</div>
+                            </div>
+                            <div class="col-md-6">
+                                <small class="text-muted">Customer:</small>
+                                <div id="summary_customer" class="fw-semibold">-</div>
+                            </div>
+                            <div class="col-md-6">
+                                <small class="text-muted">Service:</small>
+                                <div id="summary_service" class="fw-semibold">-</div>
+                            </div>
+                            <div class="col-md-6">
+                                <small class="text-muted">Payment Status:</small>
+                                <div id="summary_payment" class="fw-semibold">-</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-4 text-center">
+                        <button type="submit" class="btn btn-success px-5 py-2" style="font-size:1.1rem; font-weight:600;">
+                            <i class="fas fa-plus me-2"></i>Create Task
+                        </button>
+                        <a href="{% url 'dashboard' %}" class="btn btn-secondary px-4 py-2 ms-2">
+                            <i class="fas fa-arrow-left me-2"></i>Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Confirmation Modal -->
+<div class="modal fade" id="taskConfirmModal" tabindex="-1" aria-labelledby="taskConfirmModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="taskConfirmModalLabel">
+                    <i class="fas fa-tasks text-primary me-2"></i>Confirm Task Creation
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center mb-3">
+                    <i class="fas fa-clipboard-check text-success fa-3x mb-3"></i>
+                    <h5>Task Details</h5>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <strong>Assigned To:</strong><br>
+                        <span id="confirm_employee" class="text-muted"></span>
+                    </div>
+                    <div class="col-md-6">
+                        <strong>Customer:</strong><br>
+                        <span id="confirm_customer" class="text-muted"></span>
+                    </div>
+                    <div class="col-md-6 mt-2">
+                        <strong>Service:</strong><br>
+                        <span id="confirm_service" class="text-muted"></span>
+                    </div>
+                    <div class="col-md-6 mt-2">
+                        <strong>Delivery Date:</strong><br>
+                        <span id="confirm_date" class="text-muted"></span>
+                    </div>
+                    <div class="col-md-6 mt-2">
+                        <strong>Payment Amount:</strong><br>
+                        <span id="confirm_amount" class="text-success fw-semibold"></span>
+                    </div>
+                    <div class="col-md-6 mt-2">
+                        <strong>Payment Status:</strong><br>
+                        <span id="confirm_status" class="fw-semibold"></span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer justify-content-center">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i>Cancel
+                </button>
+                <button type="button" class="btn btn-success px-4" id="confirmTaskBtn">
+                    <i class="fas fa-check me-1"></i>Create Task
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Form elements
+    const serviceSelect = document.getElementById('service_name');
+    const paymentAmountInput = document.getElementById('payment_amount');
+    const paymentStatusRadios = document.querySelectorAll('input[name="payment_status"]');
+    const balanceContainer = document.getElementById('balance_amount_container');
+    const balanceAmountInput = document.getElementById('balance_amount');
+    const taskForm = document.getElementById('taskForm');
+    const taskSummary = document.getElementById('task_summary');
+    
+    // Summary elements
+    const summaryEmployee = document.getElementById('summary_employee');
+    const summaryCustomer = document.getElementById('summary_customer');
+    const summaryService = document.getElementById('summary_service');
+    const summaryPayment = document.getElementById('summary_payment');
+    
+    // Modal elements
+    const taskConfirmModal = new bootstrap.Modal(document.getElementById('taskConfirmModal'));
+    const confirmTaskBtn = document.getElementById('confirmTaskBtn');
+
+    // Auto-populate payment amount when service is selected
+    serviceSelect.addEventListener('change', function() {
+        const selectedOption = this.options[this.selectedIndex];
+        if (selectedOption.value) {
+            const price = selectedOption.getAttribute('data-price');
+            paymentAmountInput.value = price;
+            updateSummary();
+        } else {
+            paymentAmountInput.value = '';
+        }
+    });
+
+    // Handle payment status changes
+    paymentStatusRadios.forEach(radio => {
+        radio.addEventListener('change', function() {
+            if (this.value === 'balance') {
+                balanceContainer.style.display = 'block';
+                balanceAmountInput.required = true;
+            } else {
+                balanceContainer.style.display = 'none';
+                balanceAmountInput.required = false;
+                balanceAmountInput.value = '';
+            }
+            updateSummary();
+        });
+    });
+
+    // Update summary when form fields change
+    function updateSummary() {
+        const assignedSelect = document.getElementById('assigned_to');
+        const customerSelect = document.getElementById('customer_name');
+        
+        // Update employee
+        if (assignedSelect.value) {
+            summaryEmployee.textContent = assignedSelect.options[assignedSelect.selectedIndex].text;
+        } else {
+            summaryEmployee.textContent = '-';
+        }
+
+        // Update customer
+        if (customerSelect.value) {
+            summaryCustomer.textContent = customerSelect.options[customerSelect.selectedIndex].text;
+        } else {
+            summaryCustomer.textContent = '-';
+        }
+
+        // Update service
+        if (serviceSelect.value) {
+            summaryService.textContent = serviceSelect.options[serviceSelect.selectedIndex].text;
+        } else {
+            summaryService.textContent = '-';
+        }
+
+        // Update payment status
+        const selectedStatus = document.querySelector('input[name="payment_status"]:checked');
+        if (selectedStatus) {
+            let statusText = selectedStatus.value.charAt(0).toUpperCase() + selectedStatus.value.slice(1);
+            if (selectedStatus.value === 'balance' && balanceAmountInput.value) {
+                statusText += ` (₹${balanceAmountInput.value} remaining)`;
+            }
+            summaryPayment.textContent = statusText;
+            summaryPayment.className = `fw-semibold text-${getStatusColor(selectedStatus.value)}`;
+        } else {
+            summaryPayment.textContent = '-';
+        }
+
+        // Show/hide summary
+        const hasData = assignedSelect.value || customerSelect.value || serviceSelect.value || selectedStatus;
+        taskSummary.style.display = hasData ? 'block' : 'none';
+    }
+
+    function getStatusColor(status) {
+        switch(status) {
+            case 'paid': return 'success';
+            case 'pending': return 'warning';
+            case 'balance': return 'info';
+            default: return 'muted';
+        }
+    }
+
+    // Add event listeners to all form fields for summary update
+    document.getElementById('assigned_to').addEventListener('change', updateSummary);
+    document.getElementById('customer_name').addEventListener('change', updateSummary);
+    balanceAmountInput.addEventListener('input', updateSummary);
+
+    // Form submission with confirmation
+    taskForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        // Validate form
+        if (!validateForm()) {
+            return;
+        }
+        
+        // Populate confirmation modal
+        populateConfirmationModal();
+        
+        // Show modal
+        taskConfirmModal.show();
+    });
+
+    function validateForm() {
+        const requiredFields = ['assigned_to', 'customer_name', 'delivery_date', 'service_name', 'payment_amount'];
+        
+        for (const fieldName of requiredFields) {
+            const field = document.getElementById(fieldName);
+            if (!field.value.trim()) {
+                alert(`Please fill in the ${field.previousElementSibling.textContent.replace(':', '')}`);
+                field.focus();
+                return false;
+            }
+        }
+
+        // Check payment status
+        const selectedStatus = document.querySelector('input[name="payment_status"]:checked');
+        if (!selectedStatus) {
+            alert('Please select a payment status');
+            return false;
+        }
+
+        // If balance is selected, check balance amount
+        if (selectedStatus.value === 'balance' && !balanceAmountInput.value) {
+            alert('Please enter the balance amount');
+            balanceAmountInput.focus();
+            return false;
+        }
+
+        return true;
+    }
+
+    function populateConfirmationModal() {
+        const assignedSelect = document.getElementById('assigned_to');
+        const customerSelect = document.getElementById('customer_name');
+        const deliveryDate = document.getElementById('delivery_date');
+        const paymentAmount = document.getElementById('payment_amount');
+        const selectedStatus = document.querySelector('input[name="payment_status"]:checked');
+
+        document.getElementById('confirm_employee').textContent = assignedSelect.options[assignedSelect.selectedIndex].text;
+        document.getElementById('confirm_customer').textContent = customerSelect.options[customerSelect.selectedIndex].text;
+        document.getElementById('confirm_service').textContent = serviceSelect.options[serviceSelect.selectedIndex].text;
+        
+        // Format date
+        const date = new Date(deliveryDate.value);
+        document.getElementById('confirm_date').textContent = date.toLocaleDateString('en-IN', {
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric'
+        });
+        
+        document.getElementById('confirm_amount').textContent = `₹${paymentAmount.value}`;
+        
+        let statusText = selectedStatus.value.charAt(0).toUpperCase() + selectedStatus.value.slice(1);
+        if (selectedStatus.value === 'balance' && balanceAmountInput.value) {
+            statusText += ` (₹${balanceAmountInput.value} remaining)`;
+        }
+        const confirmStatus = document.getElementById('confirm_status');
+        confirmStatus.textContent = statusText;
+        confirmStatus.className = `fw-semibold text-${getStatusColor(selectedStatus.value)}`;
+    }
+
+    // Confirm task creation
+    confirmTaskBtn.addEventListener('click', function() {
+        taskConfirmModal.hide();
+        taskForm.submit();
+    });
+
+    // Set minimum date to today
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('delivery_date').setAttribute('min', today);
+});
+</script>
+
+<style>
+.card {
+    border-radius: 14px;
+    border: none;
+}
+
+input, select, textarea {
+    border-radius: 7px !important;
+}
+
+label {
+    font-weight: 500;
+    color: #344767;
+}
+
+.form-check-input:checked {
+    background-color: #5e72e4;
+    border-color: #5e72e4;
+}
+
+.form-check-label {
+    cursor: pointer;
+}
+
+.input-group-text {
+    background-color: #f8f9fa;
+    border-color: #dee2e6;
+}
+
+#task_summary {
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    border-left: 4px solid #5e72e4;
+}
+
+.modal-content {
+    border-radius: 15px;
+    border: none;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+}
+
+.modal-header {
+    border-bottom: 1px solid #eee;
+    padding: 1.5rem;
+}
+
+.modal-body {
+    padding: 2rem 1.5rem;
+}
+
+.modal-footer {
+    border-top: 1px solid #eee;
+    padding: 1.5rem;
+}
+
+.btn-success {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    border: none;
+    box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+}
+
+.btn-success:hover {
+    background: linear-gradient(135deg, #218838 0%, #1e7e34 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4);
+}
+
+@media (max-width: 700px) {
+    .card { 
+        padding: 10px 3vw !important; 
+    }
+    .col-md-6 { 
+        flex: 0 0 100%; 
+        max-width: 100%; 
+    }
+    .form-check-inline {
+        display: block !important;
+        margin-right: 0 !important;
+        margin-bottom: 0.5rem;
+    }
+}
+
+/* Animation for balance amount container */
+#balance_amount_container {
+    transition: all 0.3s ease-in-out;
+}
+
+/* Custom radio button styling */
+.form-check-input[type="radio"]:checked + .form-check-label {
+    color: #344767 !important;
+}
+
+.form-check-input[type="radio"]:checked + .form-check-label.text-success {
+    color: #28a745 !important;
+}
+
+.form-check-input[type="radio"]:checked + .form-check-label.text-warning {
+    color: #ffc107 !important;
+}
+
+.form-check-input[type="radio"]:checked + .form-check-label.text-info {
+    color: #17a2b8 !important;
+}
+</style>
+{% endblock %}
