@@ -1,0 +1,477 @@
+{% extends 'base.html' %}
+
+{% block title %}Payment Management{% endblock %}
+{% block page_title %}Payment Management{% endblock %}
+
+{% block content %}
+<div class="container-fluid my-4">
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Total Payments</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_payments }}</div>
+                            <div class="text-xs text-muted">₹{{ total_amount|floatformat:0 }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-credit-card fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Paid</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ paid_payments }}</div>
+                            <div class="text-xs text-muted">₹{{ paid_amount|floatformat:0 }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-check-circle fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Pending</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ pending_payments }}</div>
+                            <div class="text-xs text-muted">₹{{ pending_amount|floatformat:0 }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-clock fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Balance Due</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">₹{{ balance_amount|floatformat:0 }}</div>
+                            <div class="text-xs text-muted">{{ partial_payments }} Partial</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-exclamation-circle fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Messages -->
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <!-- Payment Management Card -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+            <h6 class="m-0 font-weight-bold text-primary">All Payments</h6>
+            <div class="dropdown">
+                <button class="btn btn-primary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                    <i class="fas fa-download fa-sm text-white-50"></i> Export
+                </button>
+                <ul class="dropdown-menu">
+                    <li><a class="dropdown-item" href="#" onclick="exportToCSV()">Export to CSV</a></li>
+                    <li><a class="dropdown-item" href="#" onclick="printPayments()">Print Report</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="card-body">
+            <form method="get" class="row g-3 mb-4">
+                <div class="col-md-2">
+                    <label for="status" class="form-label">Payment Status:</label>
+                    <select class="form-select" id="status" name="status">
+                        <option value="">All Status</option>
+                        <option value="paid" {% if status_filter == 'paid' %}selected{% endif %}>Paid</option>
+                        <option value="pending" {% if status_filter == 'pending' %}selected{% endif %}>Pending</option>
+                        <option value="partial" {% if status_filter == 'partial' %}selected{% endif %}>Partial</option>
+                    </select>
+                </div>
+                
+                <div class="col-md-3">
+                    <label for="employee" class="form-label">Employee:</label>
+                    <select class="form-select" id="employee" name="employee">
+                        <option value="">All Employees</option>
+                        {% for employee in employees %}
+                            <option value="{{ employee.id }}" {% if employee_filter == employee.id|stringformat:"s" %}selected{% endif %}>
+                                {{ employee.employee_name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-md-2">
+                    <label for="service" class="form-label">Service:</label>
+                    <select class="form-select" id="service" name="service">
+                        <option value="">All Services</option>
+                        {% for service in services %}
+                            <option value="{{ service.id }}" {% if service_filter == service.id|stringformat:"s" %}selected{% endif %}>
+                                {{ service.name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="col-md-3">
+                    <label for="search" class="form-label">Search:</label>
+                    <input type="text" class="form-control" id="search" name="search" 
+                           value="{{ search_query }}" placeholder="Search payments...">
+                </div>
+                
+                <div class="col-md-2">
+                    <label class="form-label">&nbsp;</label>
+                    <div>
+                        <button type="submit" class="btn btn-primary">Filter</button>
+                        <a href="{% url 'payment_list' %}" class="btn btn-secondary">Reset</a>
+                    </div>
+                </div>
+            </form>
+
+            <!-- Payments Table -->
+            <div class="table-responsive">
+                <table class="table table-bordered" id="paymentsTable" width="100%" cellspacing="0">
+                    <thead>
+                        <tr>
+                            <th>Task ID</th>
+                            <th>Customer</th>
+                            <th>Assigned To</th>
+                            <th>Service Name</th>
+                            <th>Amount</th>
+                            <th>Payment Status</th>
+                            <th>Delivery Date</th>
+                            <!-- <th>Actions</th> -->
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for payment in payments %}
+                        <tr {% if payment.payment_status == 'pending' %}class="table-warning"{% elif payment.payment_status == 'paid' %}class="table-success"{% elif payment.payment_status == 'partial' %}class="table-info"{% endif %}>
+                            <td>
+                                <strong>{{ payment.task_id }}</strong>
+                            </td>
+                            <td>
+                                <div>
+                                    <strong>{{ payment.customer_name.customer_name }}</strong><br>
+                                    <small class="text-muted">{{ payment.customer_name.customer_phone }}</small>
+                                </div>
+                            </td>
+                            <td>{{ payment.assigned_to.employee_name }}</td>
+                            <td>{{ payment.service_name.name }}</td>
+                            <td>
+                                <strong class="text-primary">₹{{ payment.payment_amount }}</strong>
+                                {% if payment.balance_amount > 0 %}
+                                    <br><small class="text-danger">Balance: ₹{{ payment.balance_amount }}</small>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <select class="form-select form-select-sm payment-status-select" data-payment-id="{{ payment.id }}">
+                                    <option value="pending" {% if payment.payment_status == 'pending' %}selected{% endif %}>Pending</option>
+                                    <option value="partial" {% if payment.payment_status == 'partial' %}selected{% endif %}>Partial</option>
+                                    <option value="paid" {% if payment.payment_status == 'paid' %}selected{% endif %}>Paid</option>
+                                </select>
+                            </td>
+                            <td>{{ payment.delivery_date|date:"d M, Y" }}</td>
+                            <!-- <td>
+                                <div class="btn-group" role="group">
+                                    <button type="button" class="btn btn-info btn-sm" onclick="viewPayment('{{ payment.id }}')" title="View Details">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-success btn-sm" onclick="printReceipt('{{ payment.id }}')" title="Print Receipt">
+                                        <i class="fas fa-print"></i>
+                                    </button>
+                                </div>
+                            </td> -->
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="8" class="text-center">No payments found.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            {% if payments.has_other_pages %}
+            <nav aria-label="Payments pagination">
+                <ul class="pagination justify-content-center">
+                    {% if payments.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ payments.previous_page_number }}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if employee_filter %}&employee={{ employee_filter }}{% endif %}{% if service_filter %}&service={{ service_filter }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}">Previous</a>
+                        </li>
+                    {% endif %}
+                    
+                    {% for num in payments.paginator.page_range %}
+                        {% if payments.number == num %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ num }}</span>
+                            </li>
+                        {% else %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ num }}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if employee_filter %}&employee={{ employee_filter }}{% endif %}{% if service_filter %}&service={{ service_filter }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}">{{ num }}</a>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if payments.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ payments.next_page_number }}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if employee_filter %}&employee={{ employee_filter }}{% endif %}{% if service_filter %}&service={{ service_filter }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}">Next</a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Payment Detail Modal -->
+<div class="modal fade" id="paymentDetailModal" tabindex="-1" aria-labelledby="paymentDetailModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="paymentDetailModalLabel">
+                    <i class="fas fa-credit-card text-primary me-2"></i>Payment Details
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="paymentDetailContent">
+                <!-- Content will be loaded here -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="printReceiptFromModal()">
+                    <i class="fas fa-print"></i> Print Receipt
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Update payment status
+document.querySelectorAll('.payment-status-select').forEach(select => {
+    select.addEventListener('change', function() {
+        const paymentId = this.dataset.paymentId;
+        const newStatus = this.value;
+        
+        fetch(`/payment/update-status/${paymentId}/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value || ''
+            },
+            body: `status=${newStatus}`
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error updating payment status: ' + data.error);
+                this.value = this.defaultValue; // Reset to original value
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error updating payment status');
+            this.value = this.defaultValue; // Reset to original value
+        });
+    });
+});
+
+// View payment details
+function viewPayment(paymentId) {
+    fetch(`/payment/detail/${paymentId}/`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                alert('Error: ' + data.error);
+                return;
+            }
+            
+            const content = `
+                <div class="row">
+                    <div class="col-md-6">
+                        <strong>Task ID:</strong><br>
+                        <span class="text-muted">${data.task_id}</span>
+                    </div>
+                    <div class="col-md-6">
+                        <strong>Payment Status:</strong><br>
+                        <span class="badge badge-${data.payment_status_value === 'paid' ? 'success' : data.payment_status_value === 'pending' ? 'warning' : 'info'}">${data.payment_status}</span>
+                    </div>
+                    <div class="col-md-6 mt-3">
+                        <strong>Customer:</strong><br>
+                        <span class="text-muted">${data.customer_name}</span><br>
+                        <small class="text-muted">${data.customer_phone}</small><br>
+                        <small class="text-muted">${data.customer_email}</small>
+                    </div>
+                    <div class="col-md-6 mt-3">
+                        <strong>Assigned To:</strong><br>
+                        <span class="text-muted">${data.assigned_to}</span>
+                    </div>
+                    <div class="col-md-6 mt-3">
+                        <strong>Service:</strong><br>
+                        <span class="text-muted">${data.service_name}</span>
+                    </div>
+                    <div class="col-md-6 mt-3">
+                        <strong>Delivery Date:</strong><br>
+                        <span class="text-muted">${new Date(data.delivery_date).toLocaleDateString()}</span>
+                    </div>
+                    <div class="col-md-6 mt-3">
+                        <strong>Payment Amount:</strong><br>
+                        <span class="text-success fw-bold fs-5">₹${data.payment_amount}</span>
+                    </div>
+                    <div class="col-md-6 mt-3">
+                        <strong>Balance Amount:</strong><br>
+                        <span class="text-${data.balance_amount > 0 ? 'danger' : 'success'} fw-bold">₹${data.balance_amount}</span>
+                    </div>
+                    <div class="col-md-6 mt-3">
+                        <strong>Task Status:</strong><br>
+                        <span class="badge badge-primary">${data.task_status}</span>
+                    </div>
+                    <div class="col-md-6 mt-3">
+                        <strong>Created Date:</strong><br>
+                        <span class="text-muted">${data.created_at}</span>
+                    </div>
+                    <div class="col-12 mt-3">
+                        <strong>Notes:</strong><br>
+                        <div class="p-2 bg-light rounded">
+                            <span class="text-muted">${data.task_notes}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('paymentDetailContent').innerHTML = content;
+            document.getElementById('paymentDetailModal').setAttribute('data-payment-id', paymentId);
+            new bootstrap.Modal(document.getElementById('paymentDetailModal')).show();
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error loading payment details');
+        });
+}
+
+// Print receipt
+function printReceipt(paymentId) {
+    window.open(`/payment/receipt/${paymentId}/`, '_blank');
+}
+
+function printReceiptFromModal() {
+    const paymentId = document.getElementById('paymentDetailModal').getAttribute('data-payment-id');
+    if (paymentId) {
+        printReceipt(paymentId);
+    }
+}
+
+// Export to CSV
+function exportToCSV() {
+    const table = document.getElementById('paymentsTable');
+    const rows = table.querySelectorAll('tr');
+    let csv = [];
+    
+    // Get headers
+    const headers = Array.from(rows[0].querySelectorAll('th')).slice(0, -1); // Exclude actions column
+    csv.push(headers.map(th => th.textContent.trim()).join(','));
+    
+    // Get data rows
+    for (let i = 1; i < rows.length; i++) {
+        const row = rows[i];
+        const cols = Array.from(row.querySelectorAll('td')).slice(0, -1); // Exclude actions column
+        if (cols.length > 0) {
+            csv.push(cols.map(td => `"${td.textContent.trim().replace(/"/g, '""')}"`).join(','));
+        }
+    }
+    
+    // Download CSV
+    const csvContent = csv.join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'payments_report.csv';
+    a.click();
+    window.URL.revokeObjectURL(url);
+}
+
+// Print payments report
+function printPayments() {
+    window.print();
+}
+</script>
+
+<style>
+.border-left-primary {
+    border-left: 0.25rem solid #4e73df !important;
+}
+
+.border-left-success {
+    border-left: 0.25rem solid #1cc88a !important;
+}
+
+.border-left-warning {
+    border-left: 0.25rem solid #f6c23e !important;
+}
+
+.border-left-info {
+    border-left: 0.25rem solid #36b9cc !important;
+}
+
+.table-success {
+    background-color: #d1edff !important;
+}
+
+.table-warning {
+    background-color: #fff3cd !important;
+}
+
+.table-info {
+    background-color: #d1ecf1 !important;
+}
+
+.payment-status-select {
+    min-width: 100px;
+}
+
+.badge {
+    font-size: 0.7em;
+}
+
+@media print {
+    .btn, .pagination, .card-header .dropdown {
+        display: none !important;
+    }
+    
+    .card {
+        border: none !important;
+        box-shadow: none !important;
+    }
+}
+</style>
+{% endblock %}

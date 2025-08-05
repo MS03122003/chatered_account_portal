@@ -608,3 +608,131 @@ def update_task_status(request, task_id):
 
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)}, status=400)
+    
+
+def payment_list(request):
+    """Display all payments with filtering and search functionality"""
+    
+    # Get filter parameters
+    status_filter = request.GET.get('status', '')
+    employee_filter = request.GET.get('employee', '')
+    service_filter = request.GET.get('service', '')
+    search_query = request.GET.get('search', '')
+    
+    # Base queryset - get all tasks as they contain payment information
+    payments = Task.objects.all().select_related('customer_name', 'assigned_to', 'service_name')
+    
+    # Apply filters
+    if status_filter:
+        payments = payments.filter(payment_status=status_filter)
+    
+    if employee_filter:
+        payments = payments.filter(assigned_to_id=employee_filter)
+    
+    if service_filter:
+        payments = payments.filter(service_name_id=service_filter)
+    
+    if search_query:
+        payments = payments.filter(
+            Q(customer_name__customer_name__icontains=search_query) |
+            Q(task_id__icontains=search_query) |
+            Q(service_name__name__icontains=search_query) |
+            Q(assigned_to__employee_name__icontains=search_query)
+        )
+    
+    # Order by creation date (newest first)
+    payments = payments.order_by('-created_at')
+    
+    # Pagination
+    paginator = Paginator(payments, 15)  # Show 15 payments per page
+    page_number = request.GET.get('page')
+    payments = paginator.get_page(page_number)
+    
+    # Calculate statistics
+    all_payments = Task.objects.all()
+    total_payments = all_payments.count()
+    paid_payments = all_payments.filter(payment_status='paid').count()
+    pending_payments = all_payments.filter(payment_status='pending').count()
+    partial_payments = all_payments.filter(payment_status='partial').count()
+    
+    # Calculate amounts
+    total_amount = all_payments.aggregate(Sum('payment_amount'))['payment_amount__sum'] or 0
+    paid_amount = all_payments.filter(payment_status='paid').aggregate(Sum('payment_amount'))['payment_amount__sum'] or 0
+    pending_amount = all_payments.filter(payment_status='pending').aggregate(Sum('payment_amount'))['payment_amount__sum'] or 0
+    balance_amount = all_payments.aggregate(Sum('balance_amount'))['balance_amount__sum'] or 0
+    
+    # Get all employees and services for filter dropdowns
+    employees = Employee.objects.all().order_by('employee_name')
+    services = Service.objects.all().order_by('name')
+    
+    context = {
+        'payments': payments,
+        'total_payments': total_payments,
+        'paid_payments': paid_payments,
+        'pending_payments': pending_payments,
+        'partial_payments': partial_payments,
+        'total_amount': total_amount,
+        'paid_amount': paid_amount,
+        'pending_amount': pending_amount,
+        'balance_amount': balance_amount,
+        'employees': employees,
+        'services': services,
+        'status_filter': status_filter,
+        'employee_filter': employee_filter,
+        'service_filter': service_filter,
+        'search_query': search_query,
+    }
+    
+    return render(request, 'payment_list.html', context)
+
+def payment_detail(request, payment_id):
+    """Get payment details via AJAX"""
+    try:
+        payment = get_object_or_404(Task, id=payment_id)
+        
+        data = {
+            'task_id': payment.task_id,
+            'customer_name': payment.customer_name.customer_name,
+            'customer_phone': payment.customer_name.customer_phone,
+            'customer_email': payment.customer_name.customer_email,
+            'assigned_to': payment.assigned_to.employee_name,
+            'service_name': payment.service_name.name,
+            'payment_amount': str(payment.payment_amount),
+            'balance_amount': str(payment.balance_amount),
+            'payment_status': payment.get_payment_status_display(),
+            'payment_status_value': payment.payment_status,
+            'delivery_date': payment.delivery_date.strftime('%Y-%m-%d'),
+            'task_status': payment.get_task_status_display(),
+            'task_notes': payment.task_notes or 'No notes available',
+            'created_at': payment.created_at.strftime('%d %b, %Y at %I:%M %p'),
+        }
+        
+        return JsonResponse(data)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=400)
+
+def update_payment_status(request, payment_id):
+    """Update payment status via AJAX"""
+    if request.method == 'POST':
+        try:
+            payment = get_object_or_404(Task, id=payment_id)
+            new_status = request.POST.get('status')
+            
+            if new_status in ['paid', 'pending', 'partial']:
+                payment.payment_status = new_status
+                
+                # If payment is marked as paid, set balance to 0
+                if new_status == 'paid':
+                    payment.balance_amount = 0
+                
+                payment.save()
+                
+                messages.success(request, f'Payment status updated to {payment.get_payment_status_display()}')
+                return JsonResponse({'success': True})
+            else:
+                return JsonResponse({'success': False, 'error': 'Invalid status'})
+                
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
+    
+    return JsonResponse({'success': False, 'error': 'Invalid request method'})

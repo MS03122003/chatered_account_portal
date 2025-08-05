@@ -30,4 +30,10 @@ urlpatterns = [
     path('task/delete/<int:task_id>/', views.delete_task, name='delete_task'),
     path('task/detail/<int:task_id>/', views.task_detail, name='task_detail'),
     path('task/update-status/<int:task_id>/', views.update_task_status, name='update_task_status'),
+
+     path('payments/', views.payment_list, name='payment_list'),
+    path('payment/detail/<int:payment_id>/', views.payment_detail, name='payment_detail'),
+    path('payment/update-status/<int:payment_id>/', views.update_payment_status, name='update_payment_status'),
+    # path('payment/receipt/<int:payment_id>/', views.payment_receipt, name='payment_receipt'),
+    
 ] 
