@@ -8,6 +8,7 @@ urlpatterns = [
     path('dashboard/', views.dashboard, name='dashboard'),
     
     path('new-lead/', views.new_lead, name='new_lead'),
+    path('all_leads/', views.all_leads,name='all_leads'),
     path('customer/', views.customer,name='customer'),
     path('customer/edit/<int:customer_id>/', views.edit_customer, name='edit_customer'),
     path('customer/delete/<int:customer_id>/', views.delete_customer, name='delete_customer'),

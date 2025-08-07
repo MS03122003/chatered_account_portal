@@ -5,6 +5,7 @@
 
 {% block content %}
 <div class="container-fluid py-2">
+    <!-- Original 4 Dashboard Boxes -->
     <div class="row g-4">
         <!-- Total Customer Box -->
         <div class="col-12 col-sm-6 col-lg-3">
@@ -14,7 +15,7 @@
                         <i class="fas fa-users"></i>
                     </div>
                     <h4 class="card-title mb-1">Total Customers</h4>
-                    <p class="display-6 fw-bold">{{ total_customers }}</p>
+                    <!-- <p class="display-6 fw-bold">{{ total_customers }}</p> -->
                 </div>
             </a>
         </div>
@@ -26,7 +27,7 @@
                         <i class="fas fa-tasks"></i>
                     </div>
                     <h4 class="card-title mb-1">Tasks</h4>
-                    <p class="display-6 fw-bold">{{ total_tasks }}</p>
+                    <!-- <p class="display-6 fw-bold">{{ total_tasks }}</p> -->
                 </div>
             </a>
         </div>
@@ -38,7 +39,7 @@
                         <i class="fas fa-user-tie"></i>
                     </div>
                     <h4 class="card-title mb-1">Employees</h4>
-                    <p class="display-6 fw-bold">{{ total_employees }}</p>
+                    <!-- <p class="display-6 fw-bold">{{ total_employees }}</p> -->
                 </div>
             </a>
         </div>
@@ -51,14 +52,218 @@
                         <i class="fas fa-credit-card"></i>
                     </div>
                     <h4 class="card-title mb-1">Payments</h4>
-                    <p class="display-6 fw-bold">{{ total_payments }}</p>
+                    <!-- <p class="display-6 fw-bold">{{ total_payments }}</p> -->
                 </div>
             </a>
+        </div>
+    </div>
+
+    <!-- Search Section (NEW) -->
+    <div class="row mt-5">
+        <div class="col-12">
+            <div class="search-section">
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <h4 class="mb-3"><i class="fas fa-search me-2"></i>Search All Data</h4>
+                        <form method="GET" class="search-form">
+                            <div class="input-group">
+                                <input type="text" 
+                                       name="search" 
+                                       class="form-control search-input" 
+                                       placeholder="Search by customer name, phone, employee, service, task ID..." 
+                                       value="{{ search_query }}"
+                                       autocomplete="off">
+                                <button type="submit" class="btn btn-primary search-btn">
+                                    <i class="fas fa-search"></i> Search
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="col-md-4 text-end">
+                        {% if search_query %}
+                        <a href="{% url 'dashboard' %}" class="btn btn-secondary clear-search">
+                            <i class="fas fa-times me-1"></i>Clear Search
+                        </a>
+                        {% endif %}
+                        <div class="mt-2">
+                            <small class="text-muted">
+                                {% if search_query %}
+                                    Showing results for: "<strong>{{ search_query }}</strong>"
+                                {% else %}
+                                    Showing all records
+                                {% endif %}
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Data Table (NEW) -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="data-table">
+                <div class="table-header">
+                    <h5 class="mb-0"><i class="fas fa-table me-2"></i>All Records</h5>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th><i class="fas fa-hashtag me-1"></i>Task ID</th>
+                                <th><i class="fas fa-user me-1"></i>Customer</th>
+                                <th><i class="fas fa-user-tie me-1"></i>Assigned To</th>
+                                <th><i class="fas fa-cog me-1"></i>Service</th>
+                                <th><i class="fas fa-calendar me-1"></i>Delivery Date</th>
+                                <th><i class="fas fa-tasks me-1"></i>Task Status</th>
+                                <th><i class="fas fa-credit-card me-1"></i>Payment Status</th>
+                                <th><i class="fas fa-rupee-sign me-1"></i>Amount</th>
+                                <th><i class="fas fa-clock me-1"></i>Added Date</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for task in tasks %}
+                            <tr>
+                                <td>
+                                    <strong class="text-primary">{{ task.task_id }}</strong>
+                                </td>
+                                <td>
+                                    <div>
+                                        <strong>{{ task.customer_name.customer_name }}</strong>
+                                        <br>
+                                        <small class="text-muted">
+                                            <i class="fas fa-phone fa-xs"></i> {{ task.customer_name.mobile_no }}
+                                        </small>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div>
+                                        <strong>{{ task.assigned_to.employee_name }}</strong>
+                                        <br>
+                                        <small class="text-muted">
+                                            <i class="fas fa-phone fa-xs"></i> {{ task.assigned_to.phone_number }}
+                                        </small>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="badge bg-info">{{ task.service_name.name }}</span>
+                                </td>
+                                <td>
+                                    <div>
+                                        {{ task.delivery_date|date:"d M, Y" }}
+                                        {% if task.is_overdue %}
+                                            <br><small class="overdue">
+                                                <i class="fas fa-exclamation-triangle"></i> Overdue
+                                            </small>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="status-badge status-{{ task.task_status }}">
+                                        {{ task.get_task_status_display }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="status-badge payment-{{ task.payment_status }}">
+                                        {{ task.get_payment_status_display }}
+                                    </span>
+                                    {% if task.balance_amount > 0 %}
+                                        <br><small class="text-warning">
+                                            Balance: ₹{{ task.balance_amount|floatformat:0 }}
+                                        </small>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <strong>₹{{ task.payment_amount|floatformat:0 }}</strong>
+                                </td>
+                                <td>
+                                    <div>
+                                        {{ task.created_at|date:"d M, Y" }}
+                                        <br>
+                                        <small class="text-muted">{{ task.created_at|time:"H:i" }}</small>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="9" class="text-center py-5">
+                                    <div class="text-muted">
+                                        <i class="fas fa-search fa-3x mb-3"></i>
+                                        <br>
+                                        {% if search_query %}
+                                            No results found for "{{ search_query }}"
+                                        {% else %}
+                                            No data available
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                {% if tasks.has_other_pages %}
+                <div class="pagination-wrapper">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <small class="text-muted">
+                                Showing {{ tasks.start_index }} to {{ tasks.end_index }} of {{ tasks.paginator.count }} entries
+                            </small>
+                        </div>
+                        <nav aria-label="Table pagination">
+                            <ul class="pagination pagination-sm mb-0">
+                                {% if tasks.has_previous %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page=1{% if search_query %}&search={{ search_query }}{% endif %}">
+                                            <i class="fas fa-angle-double-left"></i>
+                                        </a>
+                                    </li>
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ tasks.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}">
+                                            <i class="fas fa-angle-left"></i>
+                                        </a>
+                                    </li>
+                                {% endif %}
+
+                                {% for num in tasks.paginator.page_range %}
+                                    {% if tasks.number == num %}
+                                        <li class="page-item active">
+                                            <span class="page-link">{{ num }}</span>
+                                        </li>
+                                    {% elif num > tasks.number|add:'-3' and num < tasks.number|add:'3' %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ num }}{% if search_query %}&search={{ search_query }}{% endif %}">{{ num }}</a>
+                                        </li>
+                                    {% endif %}
+                                {% endfor %}
+
+                                {% if tasks.has_next %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ tasks.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}">
+                                            <i class="fas fa-angle-right"></i>
+                                        </a>
+                                    </li>
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ tasks.paginator.num_pages }}{% if search_query %}&search={{ search_query }}{% endif %}">
+                                            <i class="fas fa-angle-double-right"></i>
+                                        </a>
+                                    </li>
+                                {% endif %}
+                            </ul>
+                        </nav>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
         </div>
     </div>
 </div>
 
 <style>
+/* Original Dashboard Box Styles */
 .dashboard-box {
     cursor: pointer;
     transition: transform 0.2s ease, box-shadow 0.2s ease;
@@ -91,6 +296,136 @@
 .dashboard-box p,
 .dashboard-box i {
     color: white;
+}
+
+/* NEW STYLES FOR SEARCH AND TABLE */
+.search-section {
+    background: #f8f9fa;
+    border-radius: 15px;
+    padding: 25px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.data-table {
+    background: white;
+    border-radius: 15px;
+    overflow: hidden;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.table-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 20px 25px;
+}
+
+.table thead th {
+    background: #495057;
+    color: white;
+    border: none;
+    font-weight: 600;
+    padding: 15px;
+    font-size: 14px;
+}
+
+.table tbody tr {
+    border-bottom: 1px solid #eee;
+    transition: background-color 0.3s ease;
+}
+
+.table tbody tr:hover {
+    background-color: #f8f9fa;
+}
+
+.table tbody td {
+    padding: 12px 15px;
+    vertical-align: middle;
+}
+
+.status-badge {
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    display: inline-block;
+}
+
+.status-completed { background: #d4edda; color: #155724; }
+.status-in_progress { background: #d1ecf1; color: #0c5460; }
+.status-assigned { background: #fff3cd; color: #856404; }
+.status-on_hold { background: #f8d7da; color: #721c24; }
+
+.payment-paid { background: #d4edda; color: #155724; }
+.payment-pending { background: #f8d7da; color: #721c24; }
+.payment-partial { background: #fff3cd; color: #856404; }
+
+.overdue {
+    color: #dc3545;
+    font-weight: bold;
+}
+
+.search-form {
+    position: relative;
+}
+
+.search-input {
+    border-radius: 10px;
+    padding: 12px 20px;
+    border: 2px solid #e9ecef;
+    transition: all 0.3s ease;
+}
+
+.search-input:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+}
+
+.search-btn {
+    border-radius: 10px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+    padding: 10px 20px;
+}
+
+.clear-search {
+    border-radius: 10px;
+    background: #6c757d;
+    border: none;
+    padding: 8px 16px;
+}
+
+.pagination-wrapper {
+    padding: 20px 25px;
+    background: #f8f9fa;
+    border-top: 1px solid #dee2e6;
+}
+
+.page-link {
+    border-radius: 5px;
+    margin: 0 2px;
+    border: 1px solid #dee2e6;
+}
+
+.page-item.active .page-link {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-color: #667eea;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .search-section {
+        padding: 15px;
+    }
+    
+    .table-responsive {
+        font-size: 14px;
+    }
+    
+    .status-badge {
+        font-size: 10px;
+        padding: 4px 8px;
+    }
 }
 </style>
 {% endblock %}

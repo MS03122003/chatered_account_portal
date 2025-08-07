@@ -42,8 +42,73 @@ def login_view(request):
 # Dashboard view
 
 def dashboard(request):
-
-    return render(request, 'dashboard.html')
+    # Get search parameter
+    search_query = request.GET.get('search', '').strip()
+    
+    # Base queryset with all necessary joins
+    tasks = Task.objects.select_related(
+        'customer_name', 
+        'assigned_to', 
+        'service_name'
+    ).all()
+    
+    # Apply search filter if provided
+    if search_query:
+        tasks = tasks.filter(
+            Q(customer_name__customer_name__icontains=search_query) |
+            Q(customer_name__mobile_no__icontains=search_query) |
+            Q(assigned_to__employee_name__icontains=search_query) |
+            Q(assigned_to__phone_number__icontains=search_query) |
+            Q(service_name__name__icontains=search_query) |
+            Q(task_id__icontains=search_query) |
+            Q(task_status__icontains=search_query) |
+            Q(payment_status__icontains=search_query)
+        )
+    
+    # Order by creation date (newest first)
+    tasks = tasks.order_by('-created_at')
+    
+    # Pagination
+    paginator = Paginator(tasks, 10)  # Show 10 records per page
+    page_number = request.GET.get('page')
+    tasks_page = paginator.get_page(page_number)
+    
+    # Calculate dashboard statistics
+    total_customers = Lead.objects.count()
+    total_tasks = Task.objects.count()
+    completed_tasks = Task.objects.filter(task_status='completed').count()
+    pending_tasks = Task.objects.filter(task_status__in=['assigned', 'in_progress']).count()
+    
+    # Today's statistics
+    today = timezone.now().date()
+    today_tasks = Task.objects.filter(created_at__date=today).count()
+    
+    # Overdue tasks
+    overdue_tasks = Task.objects.filter(
+        delivery_date__lt=today,
+        task_status__in=['assigned', 'in_progress', 'on_hold']
+    ).count()
+    
+    # Payment statistics
+    total_revenue = Task.objects.aggregate(Sum('payment_amount'))['payment_amount__sum'] or 0
+    paid_amount = Task.objects.filter(payment_status='paid').aggregate(Sum('payment_amount'))['payment_amount__sum'] or 0
+    pending_amount = Task.objects.filter(payment_status='pending').aggregate(Sum('payment_amount'))['payment_amount__sum'] or 0
+    
+    context = {
+        'tasks': tasks_page,
+        'search_query': search_query,
+        'total_customers': total_customers,
+        'total_tasks': total_tasks,
+        'completed_tasks': completed_tasks,
+        'pending_tasks': pending_tasks,
+        'today_tasks': today_tasks,
+        'overdue_tasks': overdue_tasks,
+        'total_revenue': total_revenue,
+        'paid_amount': paid_amount,
+        'pending_amount': pending_amount,
+    }
+    
+    return render(request, 'dashboard.html', context)
 
 def add_services(request):
     services = Service.objects.all()
@@ -171,6 +236,9 @@ def logout_view(request):
 
 def new_lead(request):
     if request.method == 'POST':
+        # Get submission type to determine where to save
+        submission_type = request.POST.get('submission_type', 'customer')  # default to customer for backward compatibility
+        
         # Extract form data
         customer_id = request.POST.get('customer_id')
         customer_name = request.POST.get('customer_name')
@@ -209,7 +277,6 @@ def new_lead(request):
                 note=note,
                 upload_document=upload_document,
             )
-            
 
             # Process selected services JSON (from hidden input)
             selected_services_json = request.POST.get('selected_services', '[]')
@@ -223,8 +290,13 @@ def new_lead(request):
                         service_price=service_data['price']
                     )
 
-            messages.success(request, 'Lead added successfully!')
-            return redirect('customer')  # Redirect to customer list page
+            # Redirect based on submission type
+            if submission_type == 'lead':
+                messages.success(request, f'Lead "{customer_name}" has been saved successfully and added to All Leads!')
+                return redirect('all_leads')  # Redirect to all leads page
+            else:  # submission_type == 'customer'
+                messages.success(request, f'Customer "{customer_name}" has been added successfully!')
+                return redirect('customer')  # Redirect to customer list page
 
         except Exception as e:
             messages.error(request, f"Error saving lead: {e}")
@@ -736,3 +808,38 @@ def update_payment_status(request, payment_id):
             return JsonResponse({'success': False, 'error': str(e)})
     
     return JsonResponse({'success': False, 'error': 'Invalid request method'})
+
+def all_leads(request):
+    """Display all leads with search and pagination functionality"""
+    # Get search query from request
+    search_query = request.GET.get('search', '')
+    
+    # Base queryset
+    leads = Lead.objects.all()
+    
+    # Apply search filter if search query exists
+    if search_query:
+        leads = leads.filter(
+            Q(customer_name__icontains=search_query) |
+            Q(customer_id__icontains=search_query) |
+            Q(mobile_no__icontains=search_query) |
+            Q(email_id__icontains=search_query) |
+            Q(company_name__icontains=search_query)
+        )
+    
+    # Get total count for display
+    total_leads = leads.count()
+    
+    # Pagination
+    paginator = Paginator(leads, 10)  # Show 10 leads per page
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    context = {
+        'leads': page_obj,
+        'search_query': search_query,
+        'total_leads': total_leads,
+        'page_obj': page_obj,
+    }
+    
+    return render(request, 'all_leads.html', context)
