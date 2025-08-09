@@ -30,7 +30,6 @@ from django.db import transaction
 
 
 
-
 def login_view(request):
     if request.method == 'POST':
         username = request.POST.get('username')
@@ -113,7 +112,7 @@ def dashboard(request):
         'pending_amount': pending_amount,
     }
     
-    return render(request, 'dashboard.html', context)
+    return render(request, 'dashboard.html',context)
 
 def add_services(request):
     services = Service.objects.all()

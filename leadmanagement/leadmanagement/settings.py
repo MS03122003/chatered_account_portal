@@ -81,6 +81,7 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'leadmanagement.wsgi.application'
 
+LOGIN_REDIRECT_URL = 'dashboard'
 
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
