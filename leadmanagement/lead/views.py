@@ -262,6 +262,7 @@ def new_lead(request):
         assigned_to = request.POST.get('assigned_to')
         delivery_date = request.POST.get('delivery_date') or None
         note = request.POST.get('note')
+        document_name = request.POST.get('document_name', '').strip()
         upload_document = request.FILES.get('upload_document')
 
         try:
@@ -282,6 +283,7 @@ def new_lead(request):
                 assigned_to=assigned_to,
                 delivery_date=delivery_date,
                 note=note,
+                document_name=document_name,
                 upload_document=upload_document,
                 lead_type='lead' if submission_type == 'lead' else 'customer'
             )
@@ -373,14 +375,20 @@ def customer(request):
     
     # Total revenue
     total_revenue = sum(c['total_amount'] for c in customers)
+
+    paginator = Paginator(customers, 10)  # Show 10 customers per page
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
     
     context = {
-        'customers': customers,
+        'customers': page_obj,  # This now contains paginated customers
+        'page_obj': page_obj,   # For pagination controls in template
         'total_customers': total_customers,
         'active_today': active_today,
         'this_month': this_month,
         'total_revenue': total_revenue
     }
+    
     
     return render(request, 'customer.html', context)
 
@@ -416,6 +424,11 @@ def customer_detail(request, customer_id):
         'created_at': customer.created_at.strftime('%d %B, %Y'),
     }
 
+    paginator = Paginator(customers, 10)  # Show 10 customers per page
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+
     return JsonResponse(data)
 
 
@@ -423,26 +436,43 @@ def edit_customer(request, customer_id):
     customer = get_object_or_404(Lead, id=customer_id)
 
     if request.method == 'POST':
-        try:
-            customer.customer_id = request.POST.get('customer_id')
-            customer.customer_name = request.POST.get('customer_name')
-            customer.mobile_no = request.POST.get('mobile_no')
-            customer.father_name = request.POST.get('father_name', '')
-            customer.spouse_name = request.POST.get('spouse_name', '')
-            customer.mother_name = request.POST.get('mother_name', '')
-            customer.aadhar_card_no = request.POST.get('aadhar_card_no', '')
-            customer.pan_no = request.POST.get('pan_no', '')
-            customer.company_name = request.POST.get('company_name', '')
-            customer.email_id = request.POST.get('email_id', '')
-            customer.gst_no = request.POST.get('gst_no', '')
-            customer.cin_no = request.POST.get('cin_no', '')
-            customer.note = request.POST.get('note', '')
+        
+        # 🔹 If Remove button clicked
+        if 'delete_document' in request.POST:
+            if customer.upload_document:
+                customer.upload_document.delete(save=False)  # delete file from storage
+                customer.upload_document = None
+                customer.document_name = None
+                customer.save()
+                messages.success(request, "Document removed successfully.")
+            return redirect('edit_customer', customer_id=customer.id)
 
+        # 🔹 Normal update
+        try:
+            customer.customer_id = request.POST.get('customer_id', '').strip()
+            customer.customer_name = request.POST.get('customer_name', '').strip()
+            customer.mobile_no = request.POST.get('mobile_no', '').strip()
+            customer.father_name = request.POST.get('father_name', '').strip()
+            customer.spouse_name = request.POST.get('spouse_name', '').strip()
+            customer.mother_name = request.POST.get('mother_name', '').strip()
+            customer.aadhar_card_no = request.POST.get('aadhar_card_no', '').strip()
+            customer.pan_no = request.POST.get('pan_no', '').strip()
+            customer.company_name = request.POST.get('company_name', '').strip()
+            customer.email_id = request.POST.get('email_id', '').strip()
+            customer.gst_no = request.POST.get('gst_no', '').strip()
+            customer.cin_no = request.POST.get('cin_no', '').strip()
+            customer.note = request.POST.get('note', '').strip()
+
+            # 🔹 Save document name from form
+            customer.document_name = request.POST.get('document_name', '').strip()
+
+            # 🔹 If a new file is uploaded, replace the old one
             if 'upload_document' in request.FILES:
                 customer.upload_document = request.FILES['upload_document']
 
             customer.save()
 
+            # 🔹 Update services
             selected_services_json = request.POST.get('selected_services', '[]')
             if selected_services_json and selected_services_json != '[]':
                 LeadService.objects.filter(lead=customer).delete()
@@ -461,7 +491,7 @@ def edit_customer(request, customer_id):
         except Exception as e:
             messages.error(request, f'Error updating customer: {str(e)}')
 
-    # For GET request - load current services & all services for selection
+    # 🔹 For GET request - load current services & all services for selection
     current_services = []
     customer_services = LeadService.objects.filter(lead=customer).select_related('service')
     for cs in customer_services:
@@ -472,12 +502,11 @@ def edit_customer(request, customer_id):
         })
 
     services = Service.objects.all()
-    context = {
+    return render(request, 'edit_customer.html', {
         'customer': customer,
         'services': services,
         'current_services': json.dumps(current_services),
-    }
-    return render(request, 'edit_customer.html', context)
+    })
 
 
 @require_POST
@@ -867,7 +896,7 @@ def payment_list(request):
     payments_qs = payments_qs.order_by('-created_at')
 
     # Paginate (15 per page, you can adjust)
-    paginator = Paginator(payments_qs, 15)
+    paginator = Paginator(payments_qs, 10)
     page_number = request.GET.get('page')
     payments_page = paginator.get_page(page_number)
 
@@ -1083,7 +1112,7 @@ def all_leads(request):
     total_leads = leads.count()
     
     # Pagination
-    paginator = Paginator(leads, 10)  # Show 10 leads per page
+    paginator = Paginator(leads, 3)  # Show 10 leads per page
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
     
@@ -1097,9 +1126,14 @@ def all_leads(request):
     return render(request, 'all_leads.html', context)
 
 def view_lead(request, lead_id):
-    lead = get_object_or_404(Lead, pk=lead_id, lead_type='lead')
-    services = LeadService.objects.filter(lead=lead).select_related('service')
-    return render(request, 'view_lead.html', {'lead': lead, 'services': services})
+    lead = get_object_or_404(Lead, id=lead_id)
+    services = LeadService.objects.filter(lead=lead)
+
+    return render(request, 'view_lead.html', {
+        'lead': lead,
+        'services': services,
+    })
+
 
 
 def edit_lead(request, lead_id):
@@ -1125,6 +1159,16 @@ def edit_lead(request, lead_id):
 
         if 'upload_document' in request.FILES:
             lead.upload_document = request.FILES['upload_document']
+
+        
+        if 'delete_document' in request.POST:
+            if lead.upload_document:
+                lead.upload_document.delete(save=False)  # delete file from media folder
+                lead.upload_document = None
+                lead.document_name = None
+                lead.save()
+                messages.success(request, "Document removed successfully.")
+            return redirect('edit_lead', lead_id=lead.id)
 
         lead.save()
 
@@ -1179,7 +1223,7 @@ def delete_lead(request, lead_id):
 
     if request.method == 'POST':
         lead.lead_type = 'customer'
-        lead.save()
+        lead.delete()
         messages.success(request, f'Lead "{lead.customer_name}" has been deleted successfully!')
         return redirect('all_leads')
 

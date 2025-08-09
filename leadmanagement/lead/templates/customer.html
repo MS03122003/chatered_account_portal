@@ -1,6 +1,4 @@
-.customer-row:hover {
-    background-color: #f8f9fa;
-}{% extends 'base.html' %}
+{% extends 'base.html' %}
 
 {% block title %}Customer Management{% endblock %}
 {% block page_title %}Customer Management{% endblock %}
@@ -11,14 +9,14 @@
     {% csrf_token %}
     
     <!-- Messages -->
-    {% if messages %}
+    <!-- {% if messages %}
         {% for message in messages %}
             <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
                 {{ message }}
                 <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
             </div>
         {% endfor %}
-    {% endif %}
+    {% endif %} -->
 
     <!-- Header Section -->
     <div class="d-flex justify-content-between align-items-center mb-4">
@@ -27,7 +25,7 @@
         </h2>
         <div class="d-flex gap-2">
             <a href="{% url 'new_lead' %}" class="btn btn-success px-4">
-                <i class="fas fa-plus me-1"></i>Add New Customer
+                <i class="fas fa-plus me-1"></i>Add New Lead
             </a>
             <button class="btn btn-outline-primary" onclick="exportCustomers()">
                 <i class="fas fa-download me-1"></i>Export
@@ -74,13 +72,13 @@
         </div>
     </div>
 
-    <!-- Customer Stats Cards -->
-    <!-- <div class="row g-3 mb-4">
+    <!-- Customer Stats Cards
+    <div class="row g-3 mb-4">
         <div class="col-md-3">
             <div class="card text-center border-0 shadow-sm bg-primary text-white">
                 <div class="card-body py-3">
                     <h5 class="card-title mb-1">Total Customers</h5>
-                    <h3 class="fw-bold">{{ customers|length }}</h3>
+                    <h3 class="fw-bold">{{ total_customers }}</h3>
                 </div>
             </div>
         </div>
@@ -131,14 +129,14 @@
                             <th scope="col">Company</th>
                             <th scope="col">Services</th>
                             <th scope="col">Total Amount</th>
-                            <th scope="col">Date Added</th>
+                            <!-- <th scope="col">Date Added</th> -->
                             <th scope="col">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for customer in customers %}
                         <tr class="customer-row" data-customer-id="{{ customer.id }}">
-                            <td>{{ forloop.counter }}</td>
+                            <td>{{ customers.start_index|add:forloop.counter0 }}</td>
                             <td>
                                 <span class="fw-semibold text-primary">{{ customer.customer_id }}</span>
                             </td>
@@ -190,9 +188,9 @@
                             <td>
                                 <span class="fw-bold text-success">₹{{ customer.total_amount|default:0 }}</span>
                             </td>
-                            <td>
+                            <!-- <td>
                                 <small class="text-muted">{{ customer.created_at|date:"d M, Y" }}</small>
-                            </td>
+                            </td> -->
                             <td>
                                 <div class="btn-group btn-group-sm" role="group">
                                     <button type="button" class="btn btn-outline-info" onclick="viewCustomer('{{ customer.id }}')" title="View Details">
@@ -225,6 +223,73 @@
                 </table>
             </div>
         </div>
+        
+        <!-- Pagination Controls -->
+        {% if customers.has_other_pages %}
+        <div class="card-footer bg-light">
+            <div class="d-flex justify-content-between align-items-center">
+                <div class="text-muted">
+                    Showing {{ customers.start_index }} to {{ customers.end_index }} of {{ customers.paginator.count }} customers
+                </div>
+                <nav aria-label="Customer pagination">
+                    <ul class="pagination pagination-sm mb-0">
+                        {% if customers.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page=1" aria-label="First">
+                                    <i class="fas fa-angle-double-left"></i>
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ customers.previous_page_number }}" aria-label="Previous">
+                                    <i class="fas fa-angle-left"></i>
+                                </a>
+                            </li>
+                        {% else %}
+                            <li class="page-item disabled">
+                                <span class="page-link"><i class="fas fa-angle-double-left"></i></span>
+                            </li>
+                            <li class="page-item disabled">
+                                <span class="page-link"><i class="fas fa-angle-left"></i></span>
+                            </li>
+                        {% endif %}
+
+                        <!-- Page numbers -->
+                        {% for num in customers.paginator.page_range %}
+                            {% if customers.number == num %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ num }}</span>
+                                </li>
+                            {% elif num > customers.number|add:'-3' and num < customers.number|add:'3' %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+
+                        {% if customers.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ customers.next_page_number }}" aria-label="Next">
+                                    <i class="fas fa-angle-right"></i>
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ customers.paginator.num_pages }}" aria-label="Last">
+                                    <i class="fas fa-angle-double-right"></i>
+                                </a>
+                            </li>
+                        {% else %}
+                            <li class="page-item disabled">
+                                <span class="page-link"><i class="fas fa-angle-right"></i></span>
+                            </li>
+                            <li class="page-item disabled">
+                                <span class="page-link"><i class="fas fa-angle-double-right"></i></span>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            </div>
+        </div>
+        {% endif %}
     </div>
 </div>
 
@@ -334,8 +399,16 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
         
-        // Update counter
+        // Update counter (only for current page)
         document.getElementById('customerCount').textContent = visibleCount;
+        
+        // Show a message if filters are applied and affect pagination
+        if (searchTerm || companyFilterValue || serviceFilterValue) {
+            const paginationInfo = document.querySelector('.text-muted');
+            if (paginationInfo && visibleCount < customerRows.length) {
+                paginationInfo.innerHTML = `Showing ${visibleCount} filtered results on this page`;
+            }
+        }
     }
 });
 
@@ -349,15 +422,21 @@ function clearFilters() {
         row.style.display = '';
     });
     
-    // Update counter
+    // Reset counter to show all customers on current page
     document.getElementById('customerCount').textContent = document.querySelectorAll('.customer-row').length;
+    
+    // Reset pagination info if it exists
+    const paginationInfo = document.querySelector('.text-muted');
+    if (paginationInfo) {
+        // You might want to reload the page to reset pagination properly
+        window.location.href = window.location.pathname;
+    }
 }
 
 function viewCustomer(customerId) {
     // Redirect to the detailed customer view page
     window.location.href = `/customer/view/${customerId}/`;
 }
-
 
 function displayCustomerDetails(customer) {
     const modalBody = document.getElementById('customerModalBody');
@@ -449,6 +528,10 @@ function exportCustomers() {
 </script>
 
 <style>
+.customer-row:hover {
+    background-color: #f8f9fa;
+}
+
 .avatar-circle {
     width: 40px;
     height: 40px;
@@ -488,6 +571,35 @@ function exportCustomers() {
     border-bottom: 1px solid #dee2e6;
 }
 
+/* Pagination Styles */
+.pagination .page-link {
+    color: #007bff;
+    border: 1px solid #dee2e6;
+}
+
+.pagination .page-item.active .page-link {
+    background-color: #007bff;
+    border-color: #007bff;
+    color: white;
+}
+
+.pagination .page-link:hover {
+    background-color: #e9ecef;
+    border-color: #dee2e6;
+}
+
+.pagination .page-item.disabled .page-link {
+    color: #6c757d;
+    background-color: #fff;
+    border-color: #dee2e6;
+    cursor: not-allowed;
+}
+
+.card-footer {
+    padding: 1rem;
+    border-top: 1px solid #dee2e6;
+}
+
 @media (max-width: 768px) {
     .table-responsive {
         font-size: 0.875rem;
@@ -506,6 +618,20 @@ function exportCustomers() {
         width: 32px;
         height: 32px;
         font-size: 0.9rem;
+    }
+    
+    .pagination {
+        justify-content: center;
+    }
+    
+    .d-flex.justify-content-between {
+        flex-direction: column;
+        align-items: center;
+        gap: 1rem;
+    }
+    
+    .text-muted {
+        font-size: 0.875rem;
     }
 }
 

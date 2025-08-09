@@ -167,7 +167,7 @@
                                     {{ task.get_payment_status_display }}
                                 </span>
                                 {% if task.balance_amount > 0 %}
-                                    <br><small class="text-muted">Balance: ₹{{ task.balance_amount }}</small>
+                                    <br><small class="text-muted">amount paid: ₹{{ task.amount_paid }}</small>
                                 {% endif %}
                             </td>
                             <td>
@@ -181,9 +181,9 @@
                             </td>
                             <td>
                                 <div class="btn-group" role="group">
-                                    <button type="button" class="btn btn-info btn-sm" onclick="viewTask('{{ task.id }}')" title="View Details">
+                                    <!-- <button type="button" class="btn btn-info btn-sm" onclick="viewTask('{{ task.id }}')" title="View Details">
                                         <i class="fas fa-eye"></i>
-                                    </button>
+                                    </button> -->
                                     <a href="{% url 'edit_task' task.id %}" class="btn btn-warning btn-sm" title="Edit">
                                         <i class="fas fa-edit"></i>
                                     </a>
@@ -321,7 +321,7 @@ function viewTask(taskId) {
                     <div class="col-md-6 mt-2">
                         <strong>Payment Status:</strong><br>
                         <span class="badge badge-${data.payment_status === 'paid' ? 'success' : data.payment_status === 'pending' ? 'warning' : 'info'}">${data.payment_status}</span>
-                        ${data.balance_amount > 0 ? `<br><small class="text-muted">Balance: ₹${data.balance_amount}</small>` : ''}
+                        ${data.balance_amount > 0 ? `<br><small class="text-muted">Balance: ₹${data.amount_paid}</small>` : ''}
                     </div>
                     ${data.task_notes ? `
                     <div class="col-12 mt-3">

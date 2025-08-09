@@ -14,16 +14,6 @@
                 </a>
             </div>
 
-            <!-- Messages -->
-            <!-- {% if messages %}
-                {% for message in messages %}
-                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                        {{ message }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                    </div>
-                {% endfor %}
-            {% endif %} -->
-
             <div class="bg-white rounded-4 shadow px-4 py-4 py-md-5">
                 <form method="post" enctype="multipart/form-data" id="editCustomerForm" novalidate>
                     {% csrf_token %}
@@ -100,36 +90,64 @@
                             <input type="text" class="form-control" id="cin_no" name="cin_no" value="{{ customer.cin_no|default:'' }}" style="text-transform: uppercase;">
                         </div>
 
-                        <div class="col-md-12">
-                            <label for="upload_document" class="form-label">Upload Document:</label>
-                            <input type="file" class="form-control" id="upload_document" name="upload_document" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png">
-                            
-                            {% if customer.upload_document %}
-                                <div class="mt-2 p-3 bg-light rounded border">
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <div>
-                                            <i class="fas fa-file-alt text-primary me-2"></i>
-                                            <strong>Current Document:</strong> 
-                                            <span class="text-muted">{{ customer.upload_document.name|slice:"uploads/documents/"|default:"Document" }}</span>
-                                        </div>
-                                        <div>
-                                            <a href="{{ customer.upload_document.url }}" target="_blank" class="btn btn-sm btn-outline-primary me-2">
-                                                <i class="fas fa-eye me-1"></i>View
-                                            </a>
-                                            <a href="{{ customer.upload_document.url }}" download class="btn btn-sm btn-outline-success">
-                                                <i class="fas fa-download me-1"></i>Download
-                                            </a>
-                                        </div>
-                                    </div>
-                                    <small class="text-muted d-block mt-1">
-                                        <i class="fas fa-info-circle me-1"></i>
-                                        Select a new file above to replace the current document, or leave empty to keep the current one.
-                                    </small>
-                                </div>
-                            {% else %}
-                                <small class="text-muted">No document currently uploaded.</small>
-                            {% endif %}
+                        <!-- Updated Document Upload Section -->
+                        <div class="col-md-6">
+                            <label for="document_name" class="form-label fw-semibold">Document Name:</label>
+                            <input type="text" class="form-control" id="document_name" name="document_name"
+                                   placeholder="Enter document name"
+                                   value="{{ customer.document_name|default:'' }}">
                         </div>
+
+                        <div class="col-md-6">
+                            <label for="upload_document" class="form-label fw-semibold">Upload Document:</label>
+                            <input type="file" class="form-control" id="upload_document" name="upload_document"
+                                   accept=".pdf,.doc,.docx,.jpg,.jpeg,.png">
+                        </div>
+
+                        {% if customer.upload_document %}
+                            <div class="col-md-12 mt-2">
+                                <div class="document-preview p-3 bg-light rounded border d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <i class="fas fa-file-alt text-primary me-2"></i>
+                                        <strong>Current File:</strong>
+                                        <span class="text-muted">
+                                            {{ customer.upload_document.name|slice:"10:" }}
+                                        </span>
+                                        {% if customer.document_name %}
+                                            <br>
+                                            <small class="text-muted">
+                                                <i class="fas fa-tag me-1"></i>{{ customer.document_name }}
+                                            </small>
+                                        {% endif %}
+                                        <br>
+                                        <small class="text-muted">
+                                            <i class="fas fa-calendar-alt me-1"></i>
+                                            Uploaded on {{ customer.created_at|date:"d M Y, h:i A" }}
+                                        </small>
+                                    </div>
+                                    <div class="d-flex gap-2">
+                                        <a href="{{ customer.upload_document.url }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-eye me-1"></i>View
+                                        </a>
+                                        <a href="{{ customer.upload_document.url }}" download class="btn btn-sm btn-outline-success">
+                                            <i class="fas fa-download me-1"></i>Download
+                                        </a>
+                                        <button type="submit" name="delete_document" class="btn btn-sm btn-outline-danger" onclick="return confirm('Remove this document?');">
+                                            <i class="fas fa-trash me-1"></i>Remove
+                                        </button>
+                                    </div>
+                                </div>
+                                <small class="text-muted d-block mt-1">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    Select a new file above to replace the current document, or leave empty to keep the current one.
+                                </small>
+                            </div>
+                        {% else %}
+                            <div class="col-md-12">
+                                <small class="text-muted fst-italic">No document currently uploaded.</small>
+                            </div>
+                        {% endif %}
+
                     </div>
 
                     <hr class="my-4">
@@ -211,21 +229,18 @@ document.addEventListener('DOMContentLoaded', function() {
     
     let selectedServices = [];
 
-    // Input validation and formatting
     const mobileInput = document.getElementById('mobile_no');
     const aadharInput = document.getElementById('aadhar_card_no');
     const panInput = document.getElementById('pan_no');
     const gstInput = document.getElementById('gst_no');
     const cinInput = document.getElementById('cin_no');
 
-    // Load existing services from hidden input
     try {
         selectedServices = JSON.parse(selectedServicesInput.value || '[]');
     } catch (error) {
         selectedServices = [];
     }
 
-    // Mobile number validation - only numbers, max 10 digits
     mobileInput.addEventListener('input', function(e) {
         this.value = this.value.replace(/[^0-9]/g, '');
         if (this.value.length > 10) {
@@ -234,7 +249,6 @@ document.addEventListener('DOMContentLoaded', function() {
         validateField(this);
     });
 
-    // Aadhar validation - only numbers, max 12 digits
     aadharInput.addEventListener('input', function(e) {
         this.value = this.value.replace(/[^0-9]/g, '');
         if (this.value.length > 12) {
@@ -243,7 +257,6 @@ document.addEventListener('DOMContentLoaded', function() {
         validateField(this);
     });
 
-    // PAN validation - uppercase letters and numbers
     panInput.addEventListener('input', function(e) {
         this.value = this.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
         if (this.value.length > 10) {
@@ -252,7 +265,6 @@ document.addEventListener('DOMContentLoaded', function() {
         validateField(this);
     });
 
-    // GST validation - uppercase letters and numbers
     gstInput.addEventListener('input', function(e) {
         this.value = this.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
         if (this.value.length > 15) {
@@ -261,18 +273,15 @@ document.addEventListener('DOMContentLoaded', function() {
         validateField(this);
     });
 
-    // CIN validation - uppercase
     cinInput.addEventListener('input', function(e) {
         this.value = this.value.toUpperCase();
         validateField(this);
     });
 
-    // Email validation
     document.getElementById('email_id').addEventListener('input', function(e) {
         validateField(this);
     });
 
-    // Real-time validation function
     function validateField(field) {
         const isValid = field.checkValidity();
         if (field.value && !isValid) {
@@ -286,7 +295,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // Validate required fields
     function validateRequiredFields() {
         const requiredFields = ['customer_id', 'customer_name', 'mobile_no'];
         let isValid = true;
@@ -305,7 +313,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
 
-        // Validate services
         if (selectedServices.length === 0) {
             serviceValidationError.style.display = 'block';
             isValid = false;
@@ -316,7 +323,6 @@ document.addEventListener('DOMContentLoaded', function() {
         return isValid;
     }
 
-    // Auto-fill price when service is selected
     serviceSelect.addEventListener('change', function() {
         const selectedOption = this.options[this.selectedIndex];
         if (selectedOption.value) {
@@ -327,7 +333,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Add service to the list
     addServiceBtn.addEventListener('click', function() {
         const serviceId = serviceSelect.value;
         const serviceName = serviceSelect.options[serviceSelect.selectedIndex].getAttribute('data-name');
@@ -338,29 +343,23 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        // Check if service already added
         if (selectedServices.some(service => service.id === serviceId)) {
             alert('This service is already added.');
             return;
         }
 
-        // Add service to array
         const service = {
             id: serviceId,
             name: serviceName,
             price: servicePrice
         };
         selectedServices.push(service);
-
-        // Update display
         updateSelectedServicesDisplay();
-        
-        // Hide service validation error if services are added
+
         if (selectedServices.length > 0) {
             serviceValidationError.style.display = 'none';
         }
-        
-        // Reset form
+
         serviceSelect.value = '';
         servicePriceInput.value = '';
     });
@@ -372,7 +371,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         selectedServicesContainer.style.display = 'block';
-        
+
         let html = '';
         let totalAmount = 0;
 
@@ -395,29 +394,22 @@ document.addEventListener('DOMContentLoaded', function() {
 
         selectedServicesList.innerHTML = html;
         totalAmountSpan.textContent = totalAmount.toFixed(2);
-        
-        // Update hidden input
+
         selectedServicesInput.value = JSON.stringify(selectedServices);
     }
 
-    // Make removeService function global
     window.removeService = function(index) {
         selectedServices.splice(index, 1);
         updateSelectedServicesDisplay();
-        
-        // Show validation error if no services left
+
         if (selectedServices.length === 0) {
             serviceValidationError.style.display = 'block';
         }
     };
 
-    // Form submission with validation
     editCustomerForm.addEventListener('submit', function(e) {
-        // Validate all fields
         if (!validateRequiredFields()) {
             e.preventDefault();
-            
-            // Scroll to first invalid field
             const firstInvalidField = document.querySelector('.is-invalid');
             if (firstInvalidField) {
                 firstInvalidField.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -426,7 +418,6 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        // Validate optional fields that have values
         const optionalFieldsWithValidation = ['aadhar_card_no', 'pan_no', 'email_id', 'gst_no'];
         let hasValidationError = false;
 
@@ -449,7 +440,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Add real-time validation for required fields
     ['customer_id', 'customer_name', 'mobile_no'].forEach(fieldId => {
         const field = document.getElementById(fieldId);
         field.addEventListener('blur', function() {
@@ -462,7 +452,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // Initialize display on page load
     updateSelectedServicesDisplay();
 });
 </script>
@@ -480,18 +469,14 @@ document.addEventListener('DOMContentLoaded', function() {
     hr {
         border-top: 1.5px solid #eee;
     }
-
-    /* Validation styles */
     .is-valid {
         border-color: #198754;
         box-shadow: 0 0 0 0.2rem rgba(25, 135, 84, 0.25);
     }
-    
     .is-invalid {
         border-color: #dc3545;
         box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
     }
-    
     .invalid-feedback {
         display: block;
         width: 100%;
@@ -499,22 +484,18 @@ document.addEventListener('DOMContentLoaded', function() {
         font-size: 0.875em;
         color: #dc3545;
     }
-    
     .text-danger {
         color: #dc3545 !important;
     }
-    
     .card {
         border: 1px solid #e9ecef;
         border-radius: 8px;
     }
-    
     .btn-outline-danger:hover {
         background-color: #dc3545;
         border-color: #dc3545;
         color: white;
     }
-    
     @media (max-width: 700px) {
         .bg-white {
             padding: 16px 4vw !important;
@@ -523,11 +504,9 @@ document.addEventListener('DOMContentLoaded', function() {
             flex: 0 0 100% !important;
             max-width: 100% !important;
         }
-        
         .d-flex.gap-3 {
             flex-direction: column;
         }
-        
         .d-flex.gap-3 .btn {
             margin-bottom: 0.5rem;
         }

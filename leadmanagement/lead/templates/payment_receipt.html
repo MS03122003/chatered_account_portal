@@ -1,0 +1,332 @@
+{% extends 'base.html' %}
+
+{% block title %}Payment Receipt - {{ payment.task_id }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    @media print {
+        .no-print {
+            display: none !important;
+        }
+        
+        body {
+            font-size: 12px;
+            line-height: 1.4;
+        }
+        
+        .receipt-container {
+            max-width: 210mm;
+            margin: 0 auto;
+            padding: 10mm;
+        }
+        
+        .page-break {
+            page-break-after: always;
+        }
+    }
+    
+    .receipt-container {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+        font-family: 'Arial', sans-serif;
+    }
+    
+    .receipt-header {
+        text-align: center;
+        border-bottom: 2px solid #333;
+        padding-bottom: 20px;
+        margin-bottom: 30px;
+    }
+    
+    .company-name {
+        font-size: 28px;
+        font-weight: bold;
+        color: #333;
+        margin-bottom: 5px;
+    }
+    
+    .company-tagline {
+        font-size: 14px;
+        color: #666;
+        margin-bottom: 10px;
+    }
+    
+    .receipt-title {
+        font-size: 20px;
+        font-weight: bold;
+        color: #333;
+        margin-top: 15px;
+    }
+    
+    .receipt-info {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 30px;
+        flex-wrap: wrap;
+    }
+    
+    .receipt-left, .receipt-right {
+        flex: 1;
+        min-width: 250px;
+    }
+    
+    .receipt-right {
+        text-align: right;
+    }
+    
+    .info-section {
+        margin-bottom: 25px;
+    }
+    
+    .section-title {
+        font-size: 16px;
+        font-weight: bold;
+        color: #333;
+        margin-bottom: 10px;
+        border-bottom: 1px solid #ddd;
+        padding-bottom: 5px;
+    }
+    
+    .info-row {
+        margin-bottom: 8px;
+        display: flex;
+        justify-content: space-between;
+    }
+    
+    .info-label {
+        font-weight: bold;
+        color: #555;
+        min-width: 120px;
+    }
+    
+    .info-value {
+        color: #333;
+        flex: 1;
+        text-align: right;
+    }
+    
+    .amount-section {
+        background-color: #f8f9fa;
+        padding: 20px;
+        border-radius: 8px;
+        margin: 20px 0;
+    }
+    
+    .total-amount {
+        font-size: 18px;
+        font-weight: bold;
+        color: #333;
+        border-top: 2px solid #333;
+        padding-top: 10px;
+        margin-top: 10px;
+    }
+    
+    .payment-status {
+        display: inline-block;
+        padding: 5px 15px;
+        border-radius: 20px;
+        font-weight: bold;
+        text-transform: uppercase;
+        font-size: 12px;
+    }
+    
+    .status-paid {
+        background-color: #d4edda;
+        color: #155724;
+    }
+    
+    .status-partial {
+        background-color: #fff3cd;
+        color: #856404;
+    }
+    
+    .status-pending {
+        background-color: #f8d7da;
+        color: #721c24;
+    }
+    
+    .receipt-footer {
+        text-align: center;
+        margin-top: 40px;
+        padding-top: 20px;
+        border-top: 1px solid #ddd;
+        color: #666;
+        font-size: 12px;
+    }
+    
+    .terms-conditions {
+        margin-top: 30px;
+        font-size: 11px;
+        color: #666;
+        line-height: 1.5;
+    }
+    
+    .signature-section {
+        margin-top: 40px;
+        display: flex;
+        justify-content: space-between;
+    }
+    
+    .signature-box {
+        width: 200px;
+        text-align: center;
+    }
+    
+    .signature-line {
+        border-bottom: 1px solid #333;
+        margin-bottom: 5px;
+        height: 40px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="receipt-container">
+    <!-- Print Button (hidden in print) -->
+    <div class="no-print mb-4 text-center">
+        <button onclick="window.print()" class="btn btn-primary btn-lg">
+            <i class="fas fa-print me-2"></i>Print Receipt
+        </button>
+        <a href="{% url 'payment_detail' payment.id %}" class="btn btn-secondary btn-lg ms-2">
+            <i class="fas fa-arrow-left me-2"></i>Back to Payment Details
+        </a>
+    </div>
+
+    <!-- Receipt Header -->
+    <div class="receipt-header">
+        <div class="company-name">Your Company Name</div>
+        <div class="company-tagline">Professional Service Provider</div>
+        <div>📍 Your Company Address | 📞 Contact Number | ✉️ email@company.com</div>
+        <div class="receipt-title">PAYMENT RECEIPT</div>
+    </div>
+
+    <!-- Receipt Info -->
+    <div class="receipt-info">
+        <div class="receipt-left">
+            <div><strong>Receipt No:</strong> #{{ payment.id|stringformat:"05d" }}</div>
+            <div><strong>Task ID:</strong> {{ payment.task_id }}</div>
+            <div><strong>Date:</strong> {{ payment.created_at|date:"d M, Y" }}</div>
+        </div>
+        <div class="receipt-right">
+            <div><strong>Delivery Date:</strong> {{ payment.delivery_date|date:"d M, Y" }}</div>
+            <div><strong>Status:</strong> 
+                <span class="payment-status {% if payment.payment_status == 'paid' %}status-paid{% elif payment.payment_status == 'partial' %}status-partial{% else %}status-pending{% endif %}">
+                    {{ payment.get_payment_status_display }}
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Customer Information -->
+    <div class="info-section">
+        <div class="section-title">Bill To:</div>
+        <div><strong>{{ payment.customer_name.customer_name }}</strong></div>
+        <div>📞 {{ payment.customer_name.mobile_no }}</div>
+        <div>✉️ {{ payment.customer_name.email_id }}</div>
+    </div>
+
+    <!-- Service Details -->
+    <div class="info-section">
+        <div class="section-title">Service Details</div>
+        <div class="info-row">
+            <span class="info-label">Service Name:</span>
+            <span class="info-value">{{ payment.service_name.name }}</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">Category:</span>
+            <span class="info-value">{{ payment.service_name.category }}</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">Assigned To:</span>
+            <span class="info-value">{{ payment.assigned_to.employee_name }} ({{ payment.assigned_to.designation }})</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">Task Status:</span>
+            <span class="info-value">{{ payment.get_task_status_display }}</span>
+        </div>
+    </div>
+
+    <!-- Amount Section -->
+    <div class="amount-section">
+        <div class="section-title">Payment Summary</div>
+        <div class="info-row">
+            <span class="info-label">Base Service Price:</span>
+            <span class="info-value">₹{{ payment.service_name.base_price|floatformat:2 }}</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">Total Amount:</span>
+            <span class="info-value">₹{{ payment.payment_amount|floatformat:2 }}</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">Amount Paid:</span>
+            <span class="info-value">₹{{ payment.amount_paid|floatformat:2 }}</span>
+        </div>
+        {% if payment.balance_amount > 0 %}
+        <div class="info-row">
+            <span class="info-label">Balance Due:</span>
+            <span class="info-value" style="color: #dc3545; font-weight: bold;">₹{{ payment.balance_amount|floatformat:2 }}</span>
+        </div>
+        {% endif %}
+        <div class="total-amount info-row">
+            <span class="info-label">Net Amount Received:</span>
+            <span class="info-value">₹{{ payment.amount_paid|floatformat:2 }}</span>
+        </div>
+    </div>
+
+    <!-- Task Notes -->
+    {% if payment.task_notes %}
+    <div class="info-section">
+        <div class="section-title">Additional Notes</div>
+        <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; border-left: 4px solid #007bff;">
+            {{ payment.task_notes }}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Signature Section -->
+    <div class="signature-section">
+        <div class="signature-box">
+            <div class="signature-line"></div>
+            <div><strong>Customer Signature</strong></div>
+            <div style="font-size: 11px; color: #666;">{{ payment.customer_name.customer_name }}</div>
+        </div>
+        <div class="signature-box">
+            <div class="signature-line"></div>
+            <div><strong>Authorized Signature</strong></div>
+            <div style="font-size: 11px; color: #666;">{{ payment.assigned_to.employee_name }}</div>
+        </div>
+    </div>
+
+    <!-- Terms and Conditions -->
+    <div class="terms-conditions">
+        <div class="section-title">Terms & Conditions</div>
+        <ul style="margin: 0; padding-left: 20px;">
+            <li>This receipt is valid only for the services mentioned above.</li>
+            <li>Any disputes must be reported within 7 days of service completion.</li>
+            <li>Balance amount, if any, should be paid within the agreed timeline.</li>
+            <li>For any queries, please contact us at the above mentioned contact details.</li>
+        </ul>
+    </div>
+
+    <!-- Footer -->
+    <div class="receipt-footer">
+        <div><strong>Thank you for choosing our services!</strong></div>
+        <div>Generated on {{ "now"|date:"d M, Y - H:i A" }}</div>
+    </div>
+</div>
+
+<script>
+// Auto-print when page loads (optional - uncomment if needed)
+// window.addEventListener('load', function() {
+//     setTimeout(function() {
+//         window.print();
+//     }, 1000);
+// });
+
+// Print function
+function printReceipt() {
+    window.print();
+}
+</script>
+{% endblock %}

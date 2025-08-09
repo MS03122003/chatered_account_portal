@@ -58,11 +58,12 @@ class Lead(models.Model):
     cin_no = models.CharField(max_length=21, blank=True, null=True)
     assigned_to = models.CharField(max_length=200, blank=True, null=True)
     delivery_date = models.DateField(blank=True, null=True)
-    upload_document = models.FileField(upload_to='documents/', blank=True, null=True)
+    document_name = models.CharField(max_length=255, blank=True, null=True)  # Add this line
+    upload_document = models.FileField(upload_to='documents', blank=True, null=True)
     note = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    lead_type = models.CharField(max_length=10, choices=LEAD_TYPE_CHOICES, default='customer')
+    lead_type = models.CharField(max_length=10, choices=LEAD_TYPE_CHOICES, default='lead')
 
     
     

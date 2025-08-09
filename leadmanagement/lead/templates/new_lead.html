@@ -93,10 +93,26 @@
                             <input type="text" class="form-control" id="cin_no" name="cin_no" style="text-transform: uppercase;">
                         </div>
 
-                        <div class="col-md-12">
-                            <label for="upload_document" class="form-label">Upload Document:</label>
-                            <input type="file" class="form-control" id="upload_document" name="upload_document" accept=".pdf,.doc,.docx,.jpg,.png">
+                        <div class="row mb-3">
+                            <div class="col-md-5">
+                                <label for="document_name" class="form-label fw-semibold">Document Name:</label>
+                                <input type="text" id="document_name" name="document_name" class="form-control" placeholder="Enter document name" value="{{ lead.document_name|default:'' }}">
+                            </div>
+                            <div class="col-md-5">
+                                <label for="upload_document" class="form-label fw-semibold">Upload Document:</label>
+                                <input type="file" id="upload_document" name="upload_document" class="form-control" accept=".pdf,.doc,.docx,.jpg,.png">
+                            </div>
+                            <!-- <div class="col-md-2 d-flex align-items-end gap-2">
+                                <button type="submit" name="save_document" class="btn btn-primary w-100">
+                                    <i class="fas fa-save me-1"></i> Save
+                                </button>
+                        
+                                <button type="submit" name="delete_document" class="btn btn-outline-danger w-100">
+                                    <i class="fas fa-trash me-1"></i> Delete
+                                </button>
+                            </div> -->
                         </div>
+                        
                     </div>
 
                     <hr class="my-4">
