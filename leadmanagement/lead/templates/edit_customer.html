@@ -7,116 +7,135 @@
 <div class="container-fluid my-4">
     <div class="row justify-content-center">
         <div class="col-12 col-lg-10">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h3 class="fw-bold mb-0">Edit Customer: {{ customer.customer_name }} ({{ customer.customer_id }})</h3>
+                <a href="{% url 'customer' %}" class="btn btn-outline-primary">
+                    <i class="fas fa-arrow-left me-1"></i>Back to Customer List
+                </a>
+            </div>
+
             <!-- Messages -->
-            {% if messages %}
+            <!-- {% if messages %}
                 {% for message in messages %}
                     <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
                         {{ message }}
                         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                     </div>
                 {% endfor %}
-            {% endif %}
-
-            <!-- Header with Back Button -->
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h2 class="fw-bold text-primary mb-0">
-                    <i class="fas fa-user-edit me-2"></i>Edit Customer
-                </h2>
-                <a href="{% url 'customer' %}" class="btn btn-outline-secondary">
-                    <i class="fas fa-arrow-left me-1"></i>Back to Customer List
-                </a>
-            </div>
+            {% endif %} -->
 
             <div class="bg-white rounded-4 shadow px-4 py-4 py-md-5">
-                <form method="post" enctype="multipart/form-data" autocomplete="off" id="editCustomerForm">
+                <form method="post" enctype="multipart/form-data" id="editCustomerForm" novalidate>
                     {% csrf_token %}
+                    
                     <div class="row g-3">
                         <div class="col-md-6">
-                            <label for="customer_id" class="form-label">Customer ID:</label>
-                            <input type="text" class="form-control" id="customer_id" name="customer_id" 
-                                   value="{{ customer.customer_id }}" required>
+                            <label for="customer_id" class="form-label">Customer ID: <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="customer_id" name="customer_id" value="{{ customer.customer_id }}" required>
+                            <div class="invalid-feedback">Customer ID is required.</div>
                         </div>
 
                         <div class="col-md-6">
-                            <label for="customer_name" class="form-label">Customer Name:</label>
-                            <input type="text" class="form-control" id="customer_name" name="customer_name" 
-                                   value="{{ customer.customer_name }}" required>
+                            <label for="customer_name" class="form-label">Customer Name: <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="customer_name" name="customer_name" value="{{ customer.customer_name }}" required>
+                            <div class="invalid-feedback">Customer Name is required.</div>
                         </div>
 
                         <div class="col-md-6">
-                            <label for="mobile_no" class="form-label">Mobile No:</label>
-                            <input type="text" class="form-control" id="mobile_no" name="mobile_no" 
-                                   value="{{ customer.mobile_no }}" maxlength="15" required>
+                            <label for="mobile_no" class="form-label">Mobile No: <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="mobile_no" name="mobile_no" value="{{ customer.mobile_no }}" maxlength="10" required pattern="^[6-9][0-9]{9}$">
+                            <div class="invalid-feedback">Please enter a valid 10-digit Indian mobile number starting with 6, 7, 8, or 9.</div>
+                            <small class="text-muted">Enter 10-digit mobile number (without +91)</small>
                         </div>
 
                         <div class="col-md-6">
                             <label for="father_name" class="form-label">Father's Name:</label>
-                            <input type="text" class="form-control" id="father_name" name="father_name" 
-                                   value="{{ customer.father_name|default:'' }}">
+                            <input type="text" class="form-control" id="father_name" name="father_name" value="{{ customer.father_name|default:'' }}">
                         </div>
 
                         <div class="col-md-6">
                             <label for="spouse_name" class="form-label">Spouse Name:</label>
-                            <input type="text" class="form-control" id="spouse_name" name="spouse_name" 
-                                   value="{{ customer.spouse_name|default:'' }}">
+                            <input type="text" class="form-control" id="spouse_name" name="spouse_name" value="{{ customer.spouse_name|default:'' }}">
                         </div>
 
                         <div class="col-md-6">
                             <label for="mother_name" class="form-label">Mother's Name:</label>
-                            <input type="text" class="form-control" id="mother_name" name="mother_name" 
-                                   value="{{ customer.mother_name|default:'' }}">
+                            <input type="text" class="form-control" id="mother_name" name="mother_name" value="{{ customer.mother_name|default:'' }}">
                         </div>
 
                         <div class="col-md-6">
                             <label for="aadhar_card_no" class="form-label">Aadhar Card No:</label>
-                            <input type="text" class="form-control" id="aadhar_card_no" name="aadhar_card_no" 
-                                   value="{{ customer.aadhar_card_no|default:'' }}">
+                            <input type="text" class="form-control" id="aadhar_card_no" name="aadhar_card_no" value="{{ customer.aadhar_card_no|default:'' }}" maxlength="12" pattern="^[0-9]{12}$">
+                            <div class="invalid-feedback">Aadhar number must be exactly 12 digits.</div>
+                            <small class="text-muted">Enter 12-digit Aadhar number (without spaces)</small>
                         </div>
 
                         <div class="col-md-6">
                             <label for="pan_no" class="form-label">PAN No:</label>
-                            <input type="text" class="form-control" id="pan_no" name="pan_no" 
-                                   value="{{ customer.pan_no|default:'' }}">
+                            <input type="text" class="form-control" id="pan_no" name="pan_no" value="{{ customer.pan_no|default:'' }}" maxlength="10" pattern="^[A-Z]{5}[0-9]{4}[A-Z]{1}$" style="text-transform: uppercase;">
+                            <div class="invalid-feedback">PAN must be in format: ABCDE1234F (5 letters, 4 digits, 1 letter).</div>
+                            <small class="text-muted">Format: ABCDE1234F</small>
                         </div>
 
                         <div class="col-md-6">
                             <label for="company_name" class="form-label">Company Name:</label>
-                            <input type="text" class="form-control" id="company_name" name="company_name" 
-                                   value="{{ customer.company_name|default:'' }}">
+                            <input type="text" class="form-control" id="company_name" name="company_name" value="{{ customer.company_name|default:'' }}">
                         </div>
 
                         <div class="col-md-6">
                             <label for="email_id" class="form-label">Email ID:</label>
-                            <input type="email" class="form-control" id="email_id" name="email_id" 
-                                   value="{{ customer.email_id|default:'' }}">
+                            <input type="email" class="form-control" id="email_id" name="email_id" value="{{ customer.email_id|default:'' }}" pattern="^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$">
+                            <div class="invalid-feedback">Please enter a valid email address.</div>
                         </div>
 
                         <div class="col-md-6">
                             <label for="gst_no" class="form-label">GST No:</label>
-                            <input type="text" class="form-control" id="gst_no" name="gst_no" 
-                                   value="{{ customer.gst_no|default:'' }}">
+                            <input type="text" class="form-control" id="gst_no" name="gst_no" value="{{ customer.gst_no|default:'' }}" maxlength="15" pattern="^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$" style="text-transform: uppercase;">
+                            <div class="invalid-feedback">GST number must be in correct format (15 characters).</div>
+                            <small class="text-muted">Format: 22AAAAA0000A1Z5</small>
                         </div>
 
                         <div class="col-md-6">
                             <label for="cin_no" class="form-label">CIN No:</label>
-                            <input type="text" class="form-control" id="cin_no" name="cin_no" 
-                                   value="{{ customer.cin_no|default:'' }}">
+                            <input type="text" class="form-control" id="cin_no" name="cin_no" value="{{ customer.cin_no|default:'' }}" style="text-transform: uppercase;">
                         </div>
 
                         <div class="col-md-12">
                             <label for="upload_document" class="form-label">Upload Document:</label>
-                            <input type="file" class="form-control" id="upload_document" name="upload_document" 
-                                   accept=".pdf,.doc,.docx,.jpg,.png">
+                            <input type="file" class="form-control" id="upload_document" name="upload_document" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png">
+                            
                             {% if customer.upload_document %}
-                                <small class="text-muted">Current file: {{ customer.upload_document.name }}</small>
+                                <div class="mt-2 p-3 bg-light rounded border">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <i class="fas fa-file-alt text-primary me-2"></i>
+                                            <strong>Current Document:</strong> 
+                                            <span class="text-muted">{{ customer.upload_document.name|slice:"uploads/documents/"|default:"Document" }}</span>
+                                        </div>
+                                        <div>
+                                            <a href="{{ customer.upload_document.url }}" target="_blank" class="btn btn-sm btn-outline-primary me-2">
+                                                <i class="fas fa-eye me-1"></i>View
+                                            </a>
+                                            <a href="{{ customer.upload_document.url }}" download class="btn btn-sm btn-outline-success">
+                                                <i class="fas fa-download me-1"></i>Download
+                                            </a>
+                                        </div>
+                                    </div>
+                                    <small class="text-muted d-block mt-1">
+                                        <i class="fas fa-info-circle me-1"></i>
+                                        Select a new file above to replace the current document, or leave empty to keep the current one.
+                                    </small>
+                                </div>
+                            {% else %}
+                                <small class="text-muted">No document currently uploaded.</small>
                             {% endif %}
                         </div>
                     </div>
 
                     <hr class="my-4">
 
-                    <!-- Service Management Section -->
-                    <h5 class="fw-semibold mb-3">Manage Services</h5>
+                    <!-- Service Selection Section -->
+                    <h5 class="fw-semibold mb-3">Manage Services <span class="text-danger">*</span></h5>
                     <div class="row g-3 align-items-end">
                         <div class="col-md-5">
                             <label for="add_services" class="form-label">Select Service:</label>
@@ -142,8 +161,13 @@
                         </div>
                     </div>
 
-                    <!-- Current Services Display -->
-                    <div class="mt-3" id="selectedServicesContainer">
+                    <!-- Service Validation Error -->
+                    <div id="serviceValidationError" class="text-danger mt-2" style="display: none;">
+                        <small><i class="fas fa-exclamation-circle"></i> Please add at least one service.</small>
+                    </div>
+
+                    <!-- Selected Services Display -->
+                    <div class="mt-3" id="selectedServicesContainer" style="display: none;">
                         <h6 class="fw-semibold">Selected Services:</h6>
                         <div id="selectedServicesList" class="mt-2"></div>
                         <div class="text-end mt-2">
@@ -157,50 +181,17 @@
                     </div>
 
                     <!-- Hidden input to store selected services -->
-                    <input type="hidden" name="selected_services" id="selectedServicesInput">
+                    <input type="hidden" name="selected_services" id="selectedServicesInput" value='{{ current_services|safe }}'>
 
-                    <div class="mt-4 d-flex gap-3 justify-content-center">
+                    <div class="mt-4 d-flex justify-content-center gap-3">
                         <button type="submit" class="btn btn-success px-5 py-2" style="font-size:1.2rem; font-weight:600;">
                             <i class="fas fa-save me-2"></i>Update Customer
                         </button>
-                        <a href="{% url 'customer' %}" class="btn btn-secondary px-5 py-2" style="font-size:1.2rem; font-weight:600;">
+                        <a href="{% url 'customer' %}" class="btn btn-secondary px-4 py-2" style="font-size:1.2rem;">
                             <i class="fas fa-times me-2"></i>Cancel
                         </a>
                     </div>
                 </form>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Confirmation Modal -->
-<div class="modal fade" id="confirmationModal" tabindex="-1" aria-labelledby="confirmationModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="confirmationModalLabel">
-                    <i class="fas fa-question-circle text-primary me-2"></i>Confirm Update
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <div class="text-center">
-                    <i class="fas fa-user-edit text-warning fa-3x mb-3"></i>
-                    <h5>Update Customer Information?</h5>
-                    <p class="text-muted">Are you sure you want to update <strong id="confirmCustomerName"></strong>'s information?</p>
-                    <p class="small text-info">
-                        <i class="fas fa-info-circle me-1"></i>
-                        This will save all changes to the customer's profile and services.
-                    </p>
-                </div>
-            </div>
-            <div class="modal-footer justify-content-center">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                    <i class="fas fa-times me-1"></i>Cancel
-                </button>
-                <button type="button" class="btn btn-success px-4" id="confirmUpdateBtn">
-                    <i class="fas fa-check me-1"></i>Yes, Update Customer
-                </button>
             </div>
         </div>
     </div>
@@ -215,24 +206,115 @@ document.addEventListener('DOMContentLoaded', function() {
     const selectedServicesList = document.getElementById('selectedServicesList');
     const totalAmountSpan = document.getElementById('totalAmount');
     const selectedServicesInput = document.getElementById('selectedServicesInput');
+    const serviceValidationError = document.getElementById('serviceValidationError');
     const editCustomerForm = document.getElementById('editCustomerForm');
-    const confirmationModal = new bootstrap.Modal(document.getElementById('confirmationModal'));
-    const confirmCustomerName = document.getElementById('confirmCustomerName');
-    const confirmUpdateBtn = document.getElementById('confirmUpdateBtn');
     
-    // Initialize with current services
     let selectedServices = [];
-    
-    // Parse current services from backend
+
+    // Input validation and formatting
+    const mobileInput = document.getElementById('mobile_no');
+    const aadharInput = document.getElementById('aadhar_card_no');
+    const panInput = document.getElementById('pan_no');
+    const gstInput = document.getElementById('gst_no');
+    const cinInput = document.getElementById('cin_no');
+
+    // Load existing services from hidden input
     try {
-        const currentServices = '{{ current_services|safe }}';
-        selectedServices = currentServices || [];
-    } catch (e) {
+        selectedServices = JSON.parse(selectedServicesInput.value || '[]');
+    } catch (error) {
         selectedServices = [];
     }
-    
-    // Update display on page load
-    updateSelectedServicesDisplay();
+
+    // Mobile number validation - only numbers, max 10 digits
+    mobileInput.addEventListener('input', function(e) {
+        this.value = this.value.replace(/[^0-9]/g, '');
+        if (this.value.length > 10) {
+            this.value = this.value.slice(0, 10);
+        }
+        validateField(this);
+    });
+
+    // Aadhar validation - only numbers, max 12 digits
+    aadharInput.addEventListener('input', function(e) {
+        this.value = this.value.replace(/[^0-9]/g, '');
+        if (this.value.length > 12) {
+            this.value = this.value.slice(0, 12);
+        }
+        validateField(this);
+    });
+
+    // PAN validation - uppercase letters and numbers
+    panInput.addEventListener('input', function(e) {
+        this.value = this.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+        if (this.value.length > 10) {
+            this.value = this.value.slice(0, 10);
+        }
+        validateField(this);
+    });
+
+    // GST validation - uppercase letters and numbers
+    gstInput.addEventListener('input', function(e) {
+        this.value = this.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+        if (this.value.length > 15) {
+            this.value = this.value.slice(0, 15);
+        }
+        validateField(this);
+    });
+
+    // CIN validation - uppercase
+    cinInput.addEventListener('input', function(e) {
+        this.value = this.value.toUpperCase();
+        validateField(this);
+    });
+
+    // Email validation
+    document.getElementById('email_id').addEventListener('input', function(e) {
+        validateField(this);
+    });
+
+    // Real-time validation function
+    function validateField(field) {
+        const isValid = field.checkValidity();
+        if (field.value && !isValid) {
+            field.classList.add('is-invalid');
+            field.classList.remove('is-valid');
+        } else if (field.value && isValid) {
+            field.classList.remove('is-invalid');
+            field.classList.add('is-valid');
+        } else {
+            field.classList.remove('is-invalid', 'is-valid');
+        }
+    }
+
+    // Validate required fields
+    function validateRequiredFields() {
+        const requiredFields = ['customer_id', 'customer_name', 'mobile_no'];
+        let isValid = true;
+
+        requiredFields.forEach(fieldId => {
+            const field = document.getElementById(fieldId);
+            if (!field.value.trim()) {
+                field.classList.add('is-invalid');
+                isValid = false;
+            } else if (field.checkValidity()) {
+                field.classList.remove('is-invalid');
+                field.classList.add('is-valid');
+            } else {
+                field.classList.add('is-invalid');
+                isValid = false;
+            }
+        });
+
+        // Validate services
+        if (selectedServices.length === 0) {
+            serviceValidationError.style.display = 'block';
+            isValid = false;
+        } else {
+            serviceValidationError.style.display = 'none';
+        }
+
+        return isValid;
+    }
 
     // Auto-fill price when service is selected
     serviceSelect.addEventListener('change', function() {
@@ -273,6 +355,11 @@ document.addEventListener('DOMContentLoaded', function() {
         // Update display
         updateSelectedServicesDisplay();
         
+        // Hide service validation error if services are added
+        if (selectedServices.length > 0) {
+            serviceValidationError.style.display = 'none';
+        }
+        
         // Reset form
         serviceSelect.value = '';
         servicePriceInput.value = '';
@@ -280,12 +367,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function updateSelectedServicesDisplay() {
         if (selectedServices.length === 0) {
-            selectedServicesList.innerHTML = '<p class="text-muted">No services selected</p>';
-            totalAmountSpan.textContent = '0.00';
-            selectedServicesInput.value = JSON.stringify([]);
+            selectedServicesContainer.style.display = 'none';
             return;
         }
 
+        selectedServicesContainer.style.display = 'block';
+        
         let html = '';
         let totalAmount = 0;
 
@@ -299,7 +386,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             <span class="text-muted">- ₹${service.price.toFixed(2)}</span>
                         </div>
                         <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeService(${index})">
-                            <i class="fas fa-times"></i> Remove
+                            Remove
                         </button>
                     </div>
                 </div>
@@ -317,35 +404,66 @@ document.addEventListener('DOMContentLoaded', function() {
     window.removeService = function(index) {
         selectedServices.splice(index, 1);
         updateSelectedServicesDisplay();
+        
+        // Show validation error if no services left
+        if (selectedServices.length === 0) {
+            serviceValidationError.style.display = 'block';
+        }
     };
 
-    // Form submission with confirmation popup
+    // Form submission with validation
     editCustomerForm.addEventListener('submit', function(e) {
-        e.preventDefault(); // Prevent default submission
-        
-        // Get customer name for confirmation
-        const customerName = document.getElementById('customer_name').value;
-        
-        if (!customerName.trim()) {
-            alert('Please enter customer name');
+        // Validate all fields
+        if (!validateRequiredFields()) {
+            e.preventDefault();
+            
+            // Scroll to first invalid field
+            const firstInvalidField = document.querySelector('.is-invalid');
+            if (firstInvalidField) {
+                firstInvalidField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                firstInvalidField.focus();
+            }
             return;
         }
-        
-        // Show customer name in modal
-        confirmCustomerName.textContent = customerName;
-        
-        // Show confirmation modal
-        confirmationModal.show();
+
+        // Validate optional fields that have values
+        const optionalFieldsWithValidation = ['aadhar_card_no', 'pan_no', 'email_id', 'gst_no'];
+        let hasValidationError = false;
+
+        optionalFieldsWithValidation.forEach(fieldId => {
+            const field = document.getElementById(fieldId);
+            if (field.value && !field.checkValidity()) {
+                field.classList.add('is-invalid');
+                hasValidationError = true;
+            }
+        });
+
+        if (hasValidationError) {
+            e.preventDefault();
+            const firstInvalidField = document.querySelector('.is-invalid');
+            if (firstInvalidField) {
+                firstInvalidField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                firstInvalidField.focus();
+            }
+            return;
+        }
     });
 
-    // Handle confirmation
-    confirmUpdateBtn.addEventListener('click', function() {
-        // Hide modal
-        confirmationModal.hide();
-        
-        // Submit the form
-        editCustomerForm.submit();
+    // Add real-time validation for required fields
+    ['customer_id', 'customer_name', 'mobile_no'].forEach(fieldId => {
+        const field = document.getElementById(fieldId);
+        field.addEventListener('blur', function() {
+            validateField(this);
+        });
+        field.addEventListener('input', function() {
+            if (this.classList.contains('is-invalid')) {
+                validateField(this);
+            }
+        });
     });
+
+    // Initialize display on page load
+    updateSelectedServicesDisplay();
 });
 </script>
 
@@ -353,37 +471,37 @@ document.addEventListener('DOMContentLoaded', function() {
     .bg-white {
         background: #fff !important;
     }
-    
     input, textarea, select {
         border-radius: 7px !important;
     }
-    
     label {
         font-weight: 500;
     }
-    
     hr {
         border-top: 1.5px solid #eee;
     }
-    
-    .modal-content {
-        border-radius: 15px;
-        border: none;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+
+    /* Validation styles */
+    .is-valid {
+        border-color: #198754;
+        box-shadow: 0 0 0 0.2rem rgba(25, 135, 84, 0.25);
     }
     
-    .modal-header {
-        border-bottom: 1px solid #eee;
-        padding: 1.5rem;
+    .is-invalid {
+        border-color: #dc3545;
+        box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
     }
     
-    .modal-body {
-        padding: 2rem 1.5rem;
+    .invalid-feedback {
+        display: block;
+        width: 100%;
+        margin-top: 0.25rem;
+        font-size: 0.875em;
+        color: #dc3545;
     }
     
-    .modal-footer {
-        border-top: 1px solid #eee;
-        padding: 1.5rem;
+    .text-danger {
+        color: #dc3545 !important;
     }
     
     .card {

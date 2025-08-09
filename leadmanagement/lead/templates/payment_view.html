@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+
+{% block title %}Payment Details{% endblock %}
+{% block page_title %}Payment Details - {{ payment.task_id }}{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+    <div class="card shadow rounded-4">
+        <div class="card-header">
+            <h4>Payment Details for Task <strong>{{ payment.task_id }}</strong></h4>
+        </div>
+        <div class="card-body">
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <h5>Customer Information</h5>
+                    <p><strong>Name:</strong> {{ payment.customer_name.customer_name }}</p>
+                    <p><strong>Phone:</strong> {{ payment.customer_name.customer_phone }}</p>
+                    <p><strong>Email:</strong> {{ payment.customer_name.customer_email }}</p>
+                </div>
+                <div class="col-md-6">
+                    <h5>Assigned Employee</h5>
+                    <p><strong>Name:</strong> {{ payment.assigned_to.employee_name }}</p>
+                    <p><strong>Designation:</strong> {{ payment.assigned_to.designation }}</p>
+                </div>
+            </div>
+            
+            <hr>
+
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <h5>Service Details</h5>
+                    <p><strong>Name:</strong> {{ payment.service_name.name }}</p>
+                    <p><strong>Category:</strong> {{ payment.service_name.category }}</p>
+                    <p><strong>Base Price:</strong> ₹{{ payment.service_name.base_price|floatformat:2 }}</p>
+                </div>
+                <div class="col-md-6">
+                    <h5>Payment Information</h5>
+                    <p><strong>Total Amount:</strong> ₹{{ payment.payment_amount|floatformat:2 }}</p>
+                    <p><strong>Amount Paid:</strong> ₹{{ payment.amount_paid|floatformat:2 }}</p>
+                    <p><strong>Balance Amount:</strong> ₹{{ payment.balance_amount|floatformat:2 }}</p>
+                    <p><strong>Payment Status:</strong> {{ payment.get_payment_status_display }}</p>
+                </div>
+            </div>
+
+            <hr>
+
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <p><strong>Delivery Date:</strong> {{ payment.delivery_date|date:"d M, Y" }}</p>
+                </div>
+                <div class="col-md-6">
+                    <p><strong>Task Status:</strong> {{ payment.get_task_status_display }}</p>
+                </div>
+            </div>
+
+            <hr>
+
+            <div class="mb-3">
+                <h5>Task Notes</h5>
+                <p>{{ payment.task_notes|default:"No notes available." }}</p>
+            </div>
+
+            <div class="d-flex justify-content-between">
+                <a href="{% url 'payment_list' %}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>Back to Payments
+                </a>
+                <a href="{% url 'payment_receipt' payment.id %}" target="_blank" class="btn btn-primary">
+                    <i class="fas fa-print me-2"></i>Print Receipt
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

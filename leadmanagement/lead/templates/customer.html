@@ -195,9 +195,9 @@
                             </td>
                             <td>
                                 <div class="btn-group btn-group-sm" role="group">
-                                    <!-- <button type="button" class="btn btn-outline-info" onclick="viewCustomer('{{ customer.id }}')" title="View Details">
+                                    <button type="button" class="btn btn-outline-info" onclick="viewCustomer('{{ customer.id }}')" title="View Details">
                                         <i class="fas fa-eye"></i>
-                                    </button> -->
+                                    </button>
                                     <button type="button" class="btn btn-outline-warning" onclick="editCustomer('{{ customer.id }}')" title="Edit Customer">
                                         <i class="fas fa-edit"></i>
                                     </button>
@@ -354,23 +354,10 @@ function clearFilters() {
 }
 
 function viewCustomer(customerId) {
-    // Show loading
-    document.getElementById('customerModalBody').innerHTML = '<div class="text-center py-4"><div class="spinner-border" role="status"></div></div>';
-    
-    // Show modal
-    new bootstrap.Modal(document.getElementById('customerModal')).show();
-    
-    // Fetch customer details
-    fetch(`/customer/${customerId}/details/`)
-        .then(response => response.json())
-        .then(data => {
-            displayCustomerDetails(data);
-        })
-        .catch(error => {
-            document.getElementById('customerModalBody').innerHTML = 
-                '<div class="alert alert-danger">Error loading customer details</div>';
-        });
+    // Redirect to the detailed customer view page
+    window.location.href = `/customer/view/${customerId}/`;
 }
+
 
 function displayCustomerDetails(customer) {
     const modalBody = document.getElementById('customerModalBody');

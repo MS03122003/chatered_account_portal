@@ -28,16 +28,20 @@
             <input type="text" name="employee_name" value="{{ request.POST.employee_name|default_if_none:'' }}" class="form-control" required maxlength="100">
         </div>
         <div>
+            <label>Designation</label>
+            <input type="text" name="designation" value="{{ request.POST.designation|default_if_none:'' }}" class="form-control" maxlength="60">
+        </div>
+        <div>
             <label>Phone Number</label>
-            <input type="text" name="phone_number" value="{{ request.POST.phone_number|default_if_none:'' }}" class="form-control" required maxlength="15">
+            <input type="text" name="phone_number" value="{{ request.POST.phone_number|default_if_none:'' }}" class="form-control" required maxlength="10" pattern="^\d{10,15}$" title="Enter a valid phone number (10-15 digits)">
         </div>
         <div>
             <label>Email</label>
-            <input type="email" name="email" value="{{ request.POST.email|default_if_none:'' }}" class="form-control" required>
+           <input type="email" name="email" value="{{ request.POST.email|default_if_none:'' }}" class="form-control">
         </div>
         <div>
             <label>Address</label>
-            <textarea name="address" class="form-control" rows="2" required>{{ request.POST.address|default_if_none:'' }}</textarea>
+            <textarea name="address" class="form-control" rows="2" >{{ request.POST.address|default_if_none:'' }}</textarea>
         </div>
         <button type="submit" class="btn-main">Add Employee</button>
         <a href="{% url 'employee_list' %}" class="btn btn-secondary ms-2">Cancel</a>

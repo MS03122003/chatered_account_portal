@@ -22,6 +22,7 @@
                 <form method="post" autocomplete="off" id="taskForm">
                     {% csrf_token %}
                     <div class="row g-3">
+
                         <!-- Assigned To -->
                         <div class="col-md-6">
                             <label for="assigned_to" class="form-label">Assigned To:</label>
@@ -63,9 +64,9 @@
                             </select>
                         </div>
 
-                        <!-- Payment Amount -->
+                        <!-- Payment Amount (Total) -->
                         <div class="col-md-6">
-                            <label for="payment_amount" class="form-label">Payment Amount:</label>
+                            <label for="payment_amount" class="form-label">Total Amount:</label>
                             <div class="input-group">
                                 <span class="input-group-text">₹</span>
                                 <input type="number" class="form-control" id="payment_amount" name="payment_amount" 
@@ -78,47 +79,51 @@
                             <label class="form-label">Payment Status:</label>
                             <div class="mt-2">
                                 <div class="form-check form-check-inline">
-                                    <input class="form-check-input" type="radio" name="payment_status" 
-                                           id="status_paid" value="paid">
+                                    <input class="form-check-input" type="radio" name="payment_status" id="status_paid" value="paid">
                                     <label class="form-check-label text-success fw-semibold" for="status_paid">
-                                        <i class="fas fa-check-circle me-1"></i>Paid
+                                        <i class="fas fa-check-circle me-1"></i>Fully Paid
                                     </label>
                                 </div>
+                                <!-- Uncomment if you want pending -->
+                                <!--
                                 <div class="form-check form-check-inline">
-                                    <input class="form-check-input" type="radio" name="payment_status" 
-                                           id="status_pending" value="pending">
+                                    <input class="form-check-input" type="radio" name="payment_status" id="status_pending" value="pending" disabled>
                                     <label class="form-check-label text-warning fw-semibold" for="status_pending">
                                         <i class="fas fa-clock me-1"></i>Pending
                                     </label>
                                 </div>
+                                -->
                                 <div class="form-check form-check-inline">
-                                    <input class="form-check-input" type="radio" name="payment_status" 
-                                           id="status_balance" value="balance">
-                                    <label class="form-check-label text-info fw-semibold" for="status_balance">
-                                        <i class="fas fa-balance-scale me-1"></i>Balance
+                                    <input class="form-check-input" type="radio" name="payment_status" id="status_partial" value="partial">
+                                    <label class="form-check-label text-info fw-semibold" for="status_partial">
+                                        <i class="fas fa-balance-scale me-1"></i>Partial Paid
                                     </label>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Balance Amount (Hidden by default) -->
-                        <div class="col-md-6" id="balance_amount_container" style="display: none;">
+                        <!-- Amount Paid (shown only if "paid" or "partial") -->
+                        <div class="col-md-6" id="amount_paid_container" style="display:none;">
+                            <label for="amount_paid" class="form-label">Amount Paid:</label>
+                            <div class="input-group">
+                                <span class="input-group-text">₹</span>
+                                <input type="number" class="form-control" id="amount_paid" name="amount_paid" min="0" step="0.01" placeholder="0.00" >
+                            </div>
+                        </div>
+
+                        <!-- Balance Amount (readonly) -->
+                        <div class="col-md-6" id="balance_amount_container" style="display:none;">
                             <label for="balance_amount" class="form-label">Balance Amount:</label>
                             <div class="input-group">
                                 <span class="input-group-text">₹</span>
-                                <input type="number" class="form-control" id="balance_amount" name="balance_amount" 
-                                       min="0" step="0.01" placeholder="0.00">
+                                <input type="number" class="form-control" id="balance_amount" name="balance_amount" readonly placeholder="0.00">
                             </div>
-                            <small class="form-text text-muted">
-                                Remaining amount to be paid by customer
-                            </small>
                         </div>
 
                         <!-- Task Description/Notes -->
                         <div class="col-12">
                             <label for="task_notes" class="form-label">Task Notes/Description:</label>
-                            <textarea class="form-control" id="task_notes" name="task_notes" rows="3" 
-                                      placeholder="Additional notes or task description..."></textarea>
+                            <textarea class="form-control" id="task_notes" name="task_notes" rows="3" placeholder="Additional notes or task description..."></textarea>
                         </div>
                     </div>
 
@@ -219,7 +224,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const serviceSelect = document.getElementById('service_name');
     const paymentAmountInput = document.getElementById('payment_amount');
     const paymentStatusRadios = document.querySelectorAll('input[name="payment_status"]');
-    const balanceContainer = document.getElementById('balance_amount_container');
+    const amountPaidContainer = document.getElementById('amount_paid_container');
+    const amountPaidInput = document.getElementById('amount_paid');
+    const balanceAmountContainer = document.getElementById('balance_amount_container');
     const balanceAmountInput = document.getElementById('balance_amount');
     const taskForm = document.getElementById('taskForm');
     const taskSummary = document.getElementById('task_summary');
@@ -240,28 +247,80 @@ document.addEventListener('DOMContentLoaded', function() {
         if (selectedOption.value) {
             const price = selectedOption.getAttribute('data-price');
             paymentAmountInput.value = price;
+            calculateBalance();
             updateSummary();
         } else {
             paymentAmountInput.value = '';
+            calculateBalance();
+            updateSummary();
         }
     });
 
-    // Handle payment status changes
+    // Show/hide Amount Paid & Balance when payment status changes
     paymentStatusRadios.forEach(radio => {
         radio.addEventListener('change', function() {
-            if (this.value === 'balance') {
-                balanceContainer.style.display = 'block';
-                balanceAmountInput.required = true;
-            } else {
-                balanceContainer.style.display = 'none';
-                balanceAmountInput.required = false;
-                balanceAmountInput.value = '';
-            }
+            updatePaymentFields();
             updateSummary();
         });
     });
 
-    // Update summary when form fields change
+    // Update balance when amount paid changes
+    amountPaidInput.addEventListener('input', function() {
+        calculateBalance();
+        updateSummary();
+    });
+
+    // Update balance if total amount changes
+    paymentAmountInput.addEventListener('input', function() {
+        calculateBalance();
+        updateSummary();
+    });
+
+    // Functions
+
+    function updatePaymentFields() {
+        const selectedStatus = document.querySelector('input[name="payment_status"]:checked');
+        if (!selectedStatus) {
+            amountPaidContainer.style.display = 'none';
+            balanceAmountContainer.style.display = 'none';
+            amountPaidInput.value = '';
+            balanceAmountInput.value = '';
+            amountPaidInput.required = false;
+            return;
+        }
+
+        if (selectedStatus.value === 'paid' || selectedStatus.value === 'partial') {
+            amountPaidContainer.style.display = 'block';
+            balanceAmountContainer.style.display = 'block';
+            amountPaidInput.required = true;
+        } else {
+            amountPaidContainer.style.display = 'none';
+            balanceAmountContainer.style.display = 'none';
+            amountPaidInput.required = false;
+            amountPaidInput.value = '';
+            balanceAmountInput.value = '';
+        }
+        calculateBalance();
+    }
+
+    function calculateBalance() {
+        const total = parseFloat(paymentAmountInput.value) || 0;
+        let paid = parseFloat(amountPaidInput.value);
+
+        if (isNaN(paid) || paid < 0) {
+            paid = 0;
+            // Do NOT forcibly clear input value here to allow user correction
+        }
+        if (paid > total) {
+            alert('Amount paid cannot be greater than total amount.');
+            amountPaidInput.value = total.toFixed(2);
+            paid = total;
+        }
+
+        const balance = Math.max(total - paid, 0);
+        balanceAmountInput.value = balance.toFixed(2);
+    }
+
     function updateSummary() {
         const assignedSelect = document.getElementById('assigned_to');
         const customerSelect = document.getElementById('customer_name');
@@ -272,27 +331,27 @@ document.addEventListener('DOMContentLoaded', function() {
         } else {
             summaryEmployee.textContent = '-';
         }
-
+        
         // Update customer
         if (customerSelect.value) {
             summaryCustomer.textContent = customerSelect.options[customerSelect.selectedIndex].text;
         } else {
             summaryCustomer.textContent = '-';
         }
-
+        
         // Update service
         if (serviceSelect.value) {
             summaryService.textContent = serviceSelect.options[serviceSelect.selectedIndex].text;
         } else {
             summaryService.textContent = '-';
         }
-
+        
         // Update payment status
         const selectedStatus = document.querySelector('input[name="payment_status"]:checked');
         if (selectedStatus) {
             let statusText = selectedStatus.value.charAt(0).toUpperCase() + selectedStatus.value.slice(1);
-            if (selectedStatus.value === 'balance' && balanceAmountInput.value) {
-                statusText += ` (₹${balanceAmountInput.value} remaining)`;
+            if ((selectedStatus.value === 'partial' || selectedStatus.value === 'paid') && amountPaidInput.value) {
+                statusText += ` (₹${parseFloat(amountPaidInput.value).toFixed(2)} paid, ₹${balanceAmountInput.value} balance)`;
             }
             summaryPayment.textContent = statusText;
             summaryPayment.className = `fw-semibold text-${getStatusColor(selectedStatus.value)}`;
@@ -309,32 +368,24 @@ document.addEventListener('DOMContentLoaded', function() {
         switch(status) {
             case 'paid': return 'success';
             case 'pending': return 'warning';
-            case 'balance': return 'info';
+            case 'partial': return 'info';
             default: return 'muted';
         }
     }
 
-    // Add event listeners to all form fields for summary update
-    document.getElementById('assigned_to').addEventListener('change', updateSummary);
-    document.getElementById('customer_name').addEventListener('change', updateSummary);
-    balanceAmountInput.addEventListener('input', updateSummary);
-
-    // Form submission with confirmation
+    // Form submission handler with confirmation modal
     taskForm.addEventListener('submit', function(e) {
         e.preventDefault();
         
-        // Validate form
         if (!validateForm()) {
             return;
         }
-        
-        // Populate confirmation modal
+
         populateConfirmationModal();
-        
-        // Show modal
         taskConfirmModal.show();
     });
 
+    // Validate form inputs
     function validateForm() {
         const requiredFields = ['assigned_to', 'customer_name', 'delivery_date', 'service_name', 'payment_amount'];
         
@@ -347,35 +398,42 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
 
-        // Check payment status
         const selectedStatus = document.querySelector('input[name="payment_status"]:checked');
         if (!selectedStatus) {
             alert('Please select a payment status');
             return false;
         }
 
-        // If balance is selected, check balance amount
-        if (selectedStatus.value === 'balance' && !balanceAmountInput.value) {
-            alert('Please enter the balance amount');
-            balanceAmountInput.focus();
-            return false;
+        if (selectedStatus.value === 'paid' || selectedStatus.value === 'partial') {
+            const totalVal = parseFloat(paymentAmountInput.value);
+            const paidVal = parseFloat(amountPaidInput.value);
+            if (!amountPaidInput.value) {
+                alert('Please enter the amount paid');
+                amountPaidInput.focus();
+                return false;
+            }
+            if (isNaN(paidVal) || paidVal < 0 || paidVal > totalVal) {
+                alert('Please enter a valid amount paid (cannot exceed total amount)');
+                amountPaidInput.focus();
+                return false;
+            }
         }
 
         return true;
     }
 
+    // Populate confirmation modal fields
     function populateConfirmationModal() {
         const assignedSelect = document.getElementById('assigned_to');
         const customerSelect = document.getElementById('customer_name');
         const deliveryDate = document.getElementById('delivery_date');
         const paymentAmount = document.getElementById('payment_amount');
         const selectedStatus = document.querySelector('input[name="payment_status"]:checked');
-
+        
         document.getElementById('confirm_employee').textContent = assignedSelect.options[assignedSelect.selectedIndex].text;
         document.getElementById('confirm_customer').textContent = customerSelect.options[customerSelect.selectedIndex].text;
         document.getElementById('confirm_service').textContent = serviceSelect.options[serviceSelect.selectedIndex].text;
         
-        // Format date
         const date = new Date(deliveryDate.value);
         document.getElementById('confirm_date').textContent = date.toLocaleDateString('en-IN', {
             day: 'numeric',
@@ -383,26 +441,30 @@ document.addEventListener('DOMContentLoaded', function() {
             year: 'numeric'
         });
         
-        document.getElementById('confirm_amount').textContent = `₹${paymentAmount.value}`;
-        
+        document.getElementById('confirm_amount').textContent = `₹${parseFloat(paymentAmount.value).toFixed(2)}`;
+
         let statusText = selectedStatus.value.charAt(0).toUpperCase() + selectedStatus.value.slice(1);
-        if (selectedStatus.value === 'balance' && balanceAmountInput.value) {
-            statusText += ` (₹${balanceAmountInput.value} remaining)`;
+        if ((selectedStatus.value === 'partial' || selectedStatus.value === 'paid') && amountPaidInput.value) {
+            statusText += ` (₹${parseFloat(amountPaidInput.value).toFixed(2)} paid, ₹${balanceAmountInput.value} balance)`;
         }
         const confirmStatus = document.getElementById('confirm_status');
         confirmStatus.textContent = statusText;
         confirmStatus.className = `fw-semibold text-${getStatusColor(selectedStatus.value)}`;
     }
 
-    // Confirm task creation
+    // When user confirms in modal, submit actual form
     confirmTaskBtn.addEventListener('click', function() {
         taskConfirmModal.hide();
         taskForm.submit();
     });
 
-    // Set minimum date to today
+    // Set minimum date to today for delivery date
     const today = new Date().toISOString().split('T')[0];
     document.getElementById('delivery_date').setAttribute('min', today);
+
+    // Initialize form state (for page load with or without prefilled data)
+    updatePaymentFields();
+    updateSummary();
 });
 </script>
 

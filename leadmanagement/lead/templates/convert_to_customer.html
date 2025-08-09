@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+
+{% block title %}Convert Lead to Customer{% endblock %}
+{% block page_title %}Convert Lead to Customer{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <h3>Convert Lead to Customer</h3>
+    <p>Are you sure you want to convert lead <strong>{{ lead.customer_name }}</strong> (ID: {{ lead.customer_id }}) to a customer?</p>
+
+    <form method="post">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-success">Yes, Convert</button>
+        <a href="{% url 'all_leads' %}" class="btn btn-secondary ms-2">Cancel</a>
+    </form>
+</div>
+{% endblock %}

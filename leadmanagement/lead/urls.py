@@ -1,6 +1,8 @@
 from django.urls import path
 from .views import login_view
 from . import views
+from django.conf import settings
+from django.conf.urls.static import static
 
 urlpatterns = [
     path('', login_view, name='root_login'),
@@ -9,7 +11,13 @@ urlpatterns = [
     
     path('new-lead/', views.new_lead, name='new_lead'),
     path('all_leads/', views.all_leads,name='all_leads'),
+    path('lead/<int:lead_id>/view/', views.view_lead, name='view_lead'),
+    path('lead/<int:lead_id>/edit/', views.edit_lead, name='edit_lead'),
+    path('lead/<int:lead_id>/delete/', views.delete_lead, name='delete_lead'),
+    path('lead/<int:lead_id>/convert-to-customer/', views.convert_to_customer, name='convert_to_customer'),
+    
     path('customer/', views.customer,name='customer'),
+    path('customer/view/<int:customer_id>/', views.view_customer, name='view_customer'),
     path('customer/edit/<int:customer_id>/', views.edit_customer, name='edit_customer'),
     path('customer/delete/<int:customer_id>/', views.delete_customer, name='delete_customer'),
     # service
@@ -34,7 +42,12 @@ urlpatterns = [
 
      path('payments/', views.payment_list, name='payment_list'),
     path('payment/detail/<int:payment_id>/', views.payment_detail, name='payment_detail'),
+    path('payment/edit/<int:payment_id>/', views.edit_payment, name='edit_payment'),
     path('payment/update-status/<int:payment_id>/', views.update_payment_status, name='update_payment_status'),
-    # path('payment/receipt/<int:payment_id>/', views.payment_receipt, name='payment_receipt'),
+    path('payment/view/<int:payment_id>/', views.payment_view, name='payment_view'),
+    path('payment/receipt/<int:payment_id>/', views.payment_receipt, name='payment_receipt'),
     
 ] 
+
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

@@ -1,12 +1,19 @@
 {% extends 'base.html' %}
 
-{% block title %}Add New Lead{% endblock %}
-{% block page_title %}Add New Lead{% endblock %}
+{% block title %}Edit Lead{% endblock %}
+{% block page_title %}Edit Lead{% endblock %}
 
 {% block content %}
 <div class="container-fluid my-4">
     <div class="row justify-content-center">
         <div class="col-12 col-lg-10">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h3 class="fw-bold mb-0">Edit Lead: {{ lead.customer_name }} ({{ lead.customer_id }})</h3>
+                <a href="{% url 'view_lead' lead.id %}" class="btn btn-outline-primary">
+                    <i class="fas fa-eye me-1"></i>View Details
+                </a>
+            </div>
+
             <!-- Messages -->
             {% if messages %}
                 {% for message in messages %}
@@ -18,91 +25,117 @@
             {% endif %}
 
             <div class="bg-white rounded-4 shadow px-4 py-4 py-md-5">
-                <form method="post" enctype="multipart/form-data" autocomplete="off" id="leadForm" novalidate>
+                <form method="post" enctype="multipart/form-data" id="editLeadForm" novalidate>
                     {% csrf_token %}
-                    <input type="hidden" name="submission_type" id="submissionType" value="">
+                    
                     <div class="row g-3">
                         <div class="col-md-6">
                             <label for="customer_id" class="form-label">Customer ID: <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" id="customer_id" name="customer_id" required>
+                            <input type="text" class="form-control" id="customer_id" name="customer_id" value="{{ lead.customer_id }}" required>
                             <div class="invalid-feedback">Customer ID is required.</div>
                         </div>
 
                         <div class="col-md-6">
                             <label for="customer_name" class="form-label">Customer Name: <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" id="customer_name" name="customer_name" required>
+                            <input type="text" class="form-control" id="customer_name" name="customer_name" value="{{ lead.customer_name }}" required>
                             <div class="invalid-feedback">Customer Name is required.</div>
                         </div>
 
                         <div class="col-md-6">
                             <label for="mobile_no" class="form-label">Mobile No: <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" id="mobile_no" name="mobile_no" maxlength="10" required pattern="^[6-9][0-9]{9}$">
+                            <input type="text" class="form-control" id="mobile_no" name="mobile_no" value="{{ lead.mobile_no }}" maxlength="10" required pattern="^[6-9][0-9]{9}$">
                             <div class="invalid-feedback">Please enter a valid 10-digit Indian mobile number starting with 6, 7, 8, or 9.</div>
                             <small class="text-muted">Enter 10-digit mobile number (without +91)</small>
                         </div>
 
                         <div class="col-md-6">
                             <label for="father_name" class="form-label">Father's Name:</label>
-                            <input type="text" class="form-control" id="father_name" name="father_name">
+                            <input type="text" class="form-control" id="father_name" name="father_name" value="{{ lead.father_name|default:'' }}">
                         </div>
 
                         <div class="col-md-6">
                             <label for="spouse_name" class="form-label">Spouse Name:</label>
-                            <input type="text" class="form-control" id="spouse_name" name="spouse_name">
+                            <input type="text" class="form-control" id="spouse_name" name="spouse_name" value="{{ lead.spouse_name|default:'' }}">
                         </div>
 
                         <div class="col-md-6">
                             <label for="mother_name" class="form-label">Mother's Name:</label>
-                            <input type="text" class="form-control" id="mother_name" name="mother_name">
+                            <input type="text" class="form-control" id="mother_name" name="mother_name" value="{{ lead.mother_name|default:'' }}">
                         </div>
 
                         <div class="col-md-6">
                             <label for="aadhar_card_no" class="form-label">Aadhar Card No:</label>
-                            <input type="text" class="form-control" id="aadhar_card_no" name="aadhar_card_no" maxlength="12" pattern="^[0-9]{12}$">
+                            <input type="text" class="form-control" id="aadhar_card_no" name="aadhar_card_no" value="{{ lead.aadhar_card_no|default:'' }}" maxlength="12" pattern="^[0-9]{12}$">
                             <div class="invalid-feedback">Aadhar number must be exactly 12 digits.</div>
                             <small class="text-muted">Enter 12-digit Aadhar number (without spaces)</small>
                         </div>
 
                         <div class="col-md-6">
                             <label for="pan_no" class="form-label">PAN No:</label>
-                            <input type="text" class="form-control" id="pan_no" name="pan_no" maxlength="10" pattern="^[A-Z]{5}[0-9]{4}[A-Z]{1}$" style="text-transform: uppercase;">
+                            <input type="text" class="form-control" id="pan_no" name="pan_no" value="{{ lead.pan_no|default:'' }}" maxlength="10" pattern="^[A-Z]{5}[0-9]{4}[A-Z]{1}$" style="text-transform: uppercase;">
                             <div class="invalid-feedback">PAN must be in format: ABCDE1234F (5 letters, 4 digits, 1 letter).</div>
                             <small class="text-muted">Format: ABCDE1234F</small>
                         </div>
 
                         <div class="col-md-6">
                             <label for="company_name" class="form-label">Company Name:</label>
-                            <input type="text" class="form-control" id="company_name" name="company_name">
+                            <input type="text" class="form-control" id="company_name" name="company_name" value="{{ lead.company_name|default:'' }}">
                         </div>
 
                         <div class="col-md-6">
                             <label for="email_id" class="form-label">Email ID:</label>
-                            <input type="email" class="form-control" id="email_id" name="email_id" pattern="^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$">
+                            <input type="email" class="form-control" id="email_id" name="email_id" value="{{ lead.email_id|default:'' }}" pattern="^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$">
                             <div class="invalid-feedback">Please enter a valid email address.</div>
                         </div>
 
                         <div class="col-md-6">
                             <label for="gst_no" class="form-label">GST No:</label>
-                            <input type="text" class="form-control" id="gst_no" name="gst_no" maxlength="15" pattern="^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$" style="text-transform: uppercase;">
+                            <input type="text" class="form-control" id="gst_no" name="gst_no" value="{{ lead.gst_no|default:'' }}" maxlength="15" pattern="^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$" style="text-transform: uppercase;">
                             <div class="invalid-feedback">GST number must be in correct format (15 characters).</div>
                             <small class="text-muted">Format: 22AAAAA0000A1Z5</small>
                         </div>
 
                         <div class="col-md-6">
                             <label for="cin_no" class="form-label">CIN No:</label>
-                            <input type="text" class="form-control" id="cin_no" name="cin_no" style="text-transform: uppercase;">
+                            <input type="text" class="form-control" id="cin_no" name="cin_no" value="{{ lead.cin_no|default:'' }}" style="text-transform: uppercase;">
                         </div>
 
                         <div class="col-md-12">
                             <label for="upload_document" class="form-label">Upload Document:</label>
-                            <input type="file" class="form-control" id="upload_document" name="upload_document" accept=".pdf,.doc,.docx,.jpg,.png">
+                            <input type="file" class="form-control" id="upload_document" name="upload_document" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png">
+                            
+                            {% if lead.upload_document %}
+                                <div class="mt-2 p-3 bg-light rounded border">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <i class="fas fa-file-alt text-primary me-2"></i>
+                                            <strong>Current Document:</strong> 
+                                            <span class="text-muted">{{ lead.upload_document.name|slice:"uploads/documents/"|default:"Document" }}</span>
+                                        </div>
+                                        <div>
+                                            <a href="{{ lead.upload_document.url }}" target="_blank" class="btn btn-sm btn-outline-primary me-2">
+                                                <i class="fas fa-eye me-1"></i>View
+                                            </a>
+                                            <a href="{{ lead.upload_document.url }}" download class="btn btn-sm btn-outline-success">
+                                                <i class="fas fa-download me-1"></i>Download
+                                            </a>
+                                        </div>
+                                    </div>
+                                    <small class="text-muted d-block mt-1">
+                                        <i class="fas fa-info-circle me-1"></i>
+                                        Select a new file above to replace the current document, or leave empty to keep the current one.
+                                    </small>
+                                </div>
+                            {% else %}
+                                <small class="text-muted">No document currently uploaded.</small>
+                            {% endif %}
                         </div>
                     </div>
 
                     <hr class="my-4">
 
                     <!-- Service Selection Section -->
-                    <h5 class="fw-semibold mb-3">Add Services <span class="text-danger">*</span></h5>
+                    <h5 class="fw-semibold mb-3">Edit Services <span class="text-danger">*</span></h5>
                     <div class="row g-3 align-items-end">
                         <div class="col-md-5">
                             <label for="add_services" class="form-label">Select Service:</label>
@@ -144,58 +177,21 @@
 
                     <div class="mt-3">
                         <label for="note" class="form-label">Note:</label>
-                        <textarea class="form-control" id="note" name="note" rows="3"></textarea>
+                        <textarea class="form-control" id="note" name="note" rows="3">{{ lead.note|default:'' }}</textarea>
                     </div>
 
                     <!-- Hidden input to store selected services -->
-                    <input type="hidden" name="selected_services" id="selectedServicesInput">
+                    <input type="hidden" name="selected_services" id="selectedServicesInput" value='{{ current_services|safe }}'>
 
-                    <div class="mt-4 text-center">
+                    <div class="mt-4 d-flex justify-content-center gap-3">
                         <button type="submit" class="btn btn-success px-5 py-2" style="font-size:1.2rem; font-weight:600;">
-                            Submit Lead
+                            <i class="fas fa-save me-2"></i>Update Lead
                         </button>
+                        <a href="{% url 'all_leads' %}" class="btn btn-secondary px-4 py-2" style="font-size:1.2rem;">
+                            <i class="fas fa-times me-2"></i>Cancel
+                        </a>
                     </div>
                 </form>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Confirmation Modal -->
-<div class="modal fade" id="confirmationModal" tabindex="-1" aria-labelledby="confirmationModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="confirmationModalLabel">
-                    <i class="fas fa-question-circle text-primary me-2"></i>Choose Submission Type
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <div class="text-center">
-                    <i class="fas fa-user-plus text-success fa-3x mb-3"></i>
-                    <h5>How would you like to save this entry?</h5>
-                    <p class="text-muted">Customer: <strong id="confirmCustomerName"></strong></p>
-                    <div class="mt-3">
-                        <p class="small text-info mb-2">
-                            <i class="fas fa-info-circle me-1"></i>
-                            <strong>Submit as Lead:</strong> Save to All Leads list for future follow-up
-                        </p>
-                        <p class="small text-success">
-                            <i class="fas fa-check-circle me-1"></i>
-                            <strong>Yes, this is Customer:</strong> Save to Customer list and All Leads
-                        </p>
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer justify-content-center">
-                <input type="hidden" name="selected_services" id="selectedServicesInput">
-                <button type="button" class="btn btn-primary px-4" id="submitAsLeadBtn">
-                    <i class="fas fa-clipboard-list me-1"></i>Submit as Lead
-                </button>
-                <button type="button" class="btn btn-success px-4" id="confirmCustomerBtn">
-                    <i class="fas fa-user-check me-1"></i>Yes, this is Customer
-                </button>
             </div>
         </div>
     </div>
@@ -211,15 +207,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const totalAmountSpan = document.getElementById('totalAmount');
     const selectedServicesInput = document.getElementById('selectedServicesInput');
     const serviceValidationError = document.getElementById('serviceValidationError');
-    const leadForm = document.getElementById('leadForm');
-    const confirmationModal = new bootstrap.Modal(document.getElementById('confirmationModal'));
-    const confirmCustomerName = document.getElementById('confirmCustomerName');
-    const submitAsLeadBtn = document.getElementById('submitAsLeadBtn');
-    const confirmCustomerBtn = document.getElementById('confirmCustomerBtn');
-    const submissionTypeInput = document.getElementById('submissionType');
+    const editLeadForm = document.getElementById('editLeadForm');
     
     let selectedServices = [];
-    let totalAmount = 0;
 
     // Input validation and formatting
     const mobileInput = document.getElementById('mobile_no');
@@ -227,6 +217,13 @@ document.addEventListener('DOMContentLoaded', function() {
     const panInput = document.getElementById('pan_no');
     const gstInput = document.getElementById('gst_no');
     const cinInput = document.getElementById('cin_no');
+
+    // Load existing services from hidden input
+    try {
+        selectedServices = JSON.parse(selectedServicesInput.value || '[]');
+    } catch (error) {
+        selectedServices = [];
+    }
 
     // Mobile number validation - only numbers, max 10 digits
     mobileInput.addEventListener('input', function(e) {
@@ -377,7 +374,7 @@ document.addEventListener('DOMContentLoaded', function() {
         selectedServicesContainer.style.display = 'block';
         
         let html = '';
-        totalAmount = 0;
+        let totalAmount = 0;
 
         selectedServices.forEach((service, index) => {
             totalAmount += service.price;
@@ -415,11 +412,11 @@ document.addEventListener('DOMContentLoaded', function() {
     };
 
     // Form submission with validation
-    leadForm.addEventListener('submit', function(e) {
-        e.preventDefault(); // Prevent default submission
-        
+    editLeadForm.addEventListener('submit', function(e) {
         // Validate all fields
         if (!validateRequiredFields()) {
+            e.preventDefault();
+            
             // Scroll to first invalid field
             const firstInvalidField = document.querySelector('.is-invalid');
             if (firstInvalidField) {
@@ -442,6 +439,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
 
         if (hasValidationError) {
+            e.preventDefault();
             const firstInvalidField = document.querySelector('.is-invalid');
             if (firstInvalidField) {
                 firstInvalidField.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -449,39 +447,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             return;
         }
-        
-        // Get customer name for confirmation
-        const customerName = document.getElementById('customer_name').value;
-        
-        // Show customer name in modal
-        confirmCustomerName.textContent = customerName;
-        
-        // Show confirmation modal
-        confirmationModal.show();
-    });
-
-    // Handle "Submit as Lead" button
-    submitAsLeadBtn.addEventListener('click', function() {
-        // Set submission type to lead
-        submissionTypeInput.value = 'lead';
-        
-        // Hide modal
-        confirmationModal.hide();
-        
-        // Submit the form
-        leadForm.submit();
-    });
-
-    // Handle "Yes, this is Customer" button
-    confirmCustomerBtn.addEventListener('click', function() {
-        // Set submission type to customer
-        submissionTypeInput.value = 'customer';
-        
-        // Hide modal
-        confirmationModal.hide();
-        
-        // Submit the form
-        leadForm.submit();
     });
 
     // Add real-time validation for required fields
@@ -496,6 +461,9 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     });
+
+    // Initialize display on page load
+    updateSelectedServicesDisplay();
 });
 </script>
 
@@ -511,26 +479,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     hr {
         border-top: 1.5px solid #eee;
-    }
-    
-    .modal-content {
-        border-radius: 15px;
-        border: none;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-    }
-    
-    .modal-header {
-        border-bottom: 1px solid #eee;
-        padding: 1.5rem;
-    }
-    
-    .modal-body {
-        padding: 2rem 1.5rem;
-    }
-    
-    .modal-footer {
-        border-top: 1px solid #eee;
-        padding: 1.5rem;
     }
 
     /* Validation styles */

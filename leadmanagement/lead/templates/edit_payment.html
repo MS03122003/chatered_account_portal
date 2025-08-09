@@ -1,0 +1,113 @@
+{% extends 'base.html' %}
+
+{% block title %}Edit Payment{% endblock %}
+{% block page_title %}Edit Payment - {{ payment.task_id }}{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <!-- Flash Messages -->
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+            <div class="card shadow rounded-4 p-4">
+                <h4 class="mb-4">Edit Payment Details</h4>
+                <form method="post">
+                    {% csrf_token %}
+
+                    <!-- Display Info (Read Only) -->
+                    <div class="mb-3">
+                        <label class="form-label">Task ID</label>
+                        <input type="text" class="form-control" value="{{ payment.task_id }}" readonly>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Customer</label>
+                        <input type="text" class="form-control" value="{{ payment.customer_name.customer_name }}" readonly>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Service</label>
+                        <input type="text" class="form-control" value="{{ payment.service_name.name }}" readonly>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Total Amount</label>
+                        <input type="number" class="form-control" value="{{ payment.payment_amount|floatformat:2 }}">
+                    </div>
+
+                    <!-- Editable Fields -->
+                    <div class="mb-3">
+                        <label class="form-label" for="payment_status">Payment Status</label>
+                        <select class="form-select" name="payment_status" id="payment_status" required>
+                            <option value="paid" {% if payment.payment_status == 'paid' %}selected{% endif %}>Fully Paid</option>
+                            <option value="partial" {% if payment.payment_status == 'partial' %}selected{% endif %}>Partial Paid</option>
+                            <option value="pending" {% if payment.payment_status == 'pending' %}selected{% endif %}>Pending</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3" id="amount_paid_group" style="{% if payment.payment_status == 'pending' %}display:none;{% endif %}">
+                        <label class="form-label" for="amount_paid">Amount Paid</label>
+                        <input type="number" 
+                               name="amount_paid" 
+                               id="amount_paid" 
+                               step="0.01" 
+                               min="0" 
+                               max="{{ payment.payment_amount }}" 
+                               class="form-control" 
+                               value="{{ payment.amount_paid|floatformat:2 }}">
+                    </div>
+
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'payment_list' %}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left me-1"></i> Back
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-1"></i> Save Changes
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript to handle amount paid field visibility and auto-fill -->
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const paymentStatusField = document.getElementById('payment_status');
+    const amountPaidGroup = document.getElementById('amount_paid_group');
+    const amountPaidInput = document.getElementById('amount_paid');
+    const totalAmount = parseFloat("{{ payment.payment_amount|floatformat:'2' }}");
+
+    function toggleAmountPaidVisibility() {
+        const status = paymentStatusField.value;
+        if (status === 'pending') {
+            amountPaidGroup.style.display = 'none';
+            amountPaidInput.value = '';
+            amountPaidInput.required = false;
+        } else {
+            amountPaidGroup.style.display = 'block';
+            amountPaidInput.required = true;
+
+            if (status === 'paid') {
+                // Set amount paid equal to total amount on Fully Paid
+                amountPaidInput.value = totalAmount.toFixed(2);
+            }
+        }
+    }
+
+    paymentStatusField.addEventListener('change', toggleAmountPaidVisibility);
+
+    // Initialize on page load
+    toggleAmountPaidVisibility();
+});
+</script>
+{% endblock %}

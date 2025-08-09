@@ -72,7 +72,7 @@
                             <th scope="col">Email</th>
                             <th scope="col">Company</th>
                             <th scope="col">Services</th>
-                            <th scope="col">Created Date</th>
+                            <!-- <th scope="col">Created Date</th> -->
                             <th scope="col" class="text-center">Actions</th>
                         </tr>
                     </thead>
@@ -126,38 +126,31 @@
                                 <span class="text-muted">No services</span>
                                 {% endif %}
                             </td>
-                            <td>
+                            <!-- <td>
                                 <small class="text-muted">
                                     <i class="fas fa-calendar me-1"></i>
                                     {{ lead.created_at|date:"d M Y" }}
                                     <br>
                                     {{ lead.created_at|time:"H:i" }}
                                 </small>
-                            </td>
+                            </td> -->
                             <td class="text-center">
                                 <div class="btn-group btn-group-sm" role="group">
-                                    <button type="button" class="btn btn-outline-primary" 
-                                            onclick="viewLead(`{{ lead.id }}`)" 
-                                            title="View Details">
+                                    <a href="{% url 'view_lead' lead.id %}" class="btn btn-outline-primary" title="View Details">
                                         <i class="fas fa-eye"></i>
-                                    </button>
-                                    <button type="button" class="btn btn-outline-success" 
-                                            onclick="convertToCustomer(`{{ lead.id }}`, '{{ lead.customer_name }}')" 
-                                            title="Convert to Customer">
+                                    </a>
+                                    <a href="{% url 'convert_to_customer' lead.id %}" class="btn btn-outline-success" title="Convert to Customer">
                                         <i class="fas fa-user-plus"></i>
-                                    </button>
-                                    <button type="button" class="btn btn-outline-info" 
-                                            onclick="editLead(`{{ lead.id }}`)" 
-                                            title="Edit Lead">
+                                    </a>
+                                    <a href="{% url 'edit_lead' lead.id %}" class="btn btn-outline-info" title="Edit Lead">
                                         <i class="fas fa-edit"></i>
-                                    </button>
-                                    <button type="button" class="btn btn-outline-danger" 
-                                            onclick="deleteLead(`{{ lead.id }}`, '{{ lead.customer_name }}')" 
-                                            title="Delete Lead">
+                                    </a>
+                                    <a href="{% url 'delete_lead' lead.id %}" class="btn btn-outline-danger" title="Delete Lead">
                                         <i class="fas fa-trash"></i>
-                                    </button>
+                                    </a>
                                 </div>
                             </td>
+
                         </tr>
                         {% endfor %}
                     </tbody>

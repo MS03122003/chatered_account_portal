@@ -86,392 +86,207 @@
         {% endfor %}
     {% endif %}
 
-    <!-- Payment Management Card -->
-    <div class="card shadow mb-4">
-        <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-            <h6 class="m-0 font-weight-bold text-primary">All Payments</h6>
-            <div class="dropdown">
-                <button class="btn btn-primary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                    <i class="fas fa-download fa-sm text-white-50"></i> Export
-                </button>
-                <ul class="dropdown-menu">
-                    <li><a class="dropdown-item" href="#" onclick="exportToCSV()">Export to CSV</a></li>
-                    <li><a class="dropdown-item" href="#" onclick="printPayments()">Print Report</a></li>
-                </ul>
-            </div>
-        </div>
-
-        <!-- Filters -->
-        <div class="card-body">
-            <form method="get" class="row g-3 mb-4">
-                <div class="col-md-2">
-                    <label for="status" class="form-label">Payment Status:</label>
-                    <select class="form-select" id="status" name="status">
-                        <option value="">All Status</option>
-                        <option value="paid" {% if status_filter == 'paid' %}selected{% endif %}>Paid</option>
-                        <option value="pending" {% if status_filter == 'pending' %}selected{% endif %}>Pending</option>
-                        <option value="partial" {% if status_filter == 'partial' %}selected{% endif %}>Partial</option>
-                    </select>
-                </div>
-                
-                <div class="col-md-3">
-                    <label for="employee" class="form-label">Employee:</label>
-                    <select class="form-select" id="employee" name="employee">
-                        <option value="">All Employees</option>
-                        {% for employee in employees %}
-                            <option value="{{ employee.id }}" {% if employee_filter == employee.id|stringformat:"s" %}selected{% endif %}>
-                                {{ employee.employee_name }}
-                            </option>
-                        {% endfor %}
-                    </select>
-                </div>
-
-                <div class="col-md-2">
-                    <label for="service" class="form-label">Service:</label>
-                    <select class="form-select" id="service" name="service">
-                        <option value="">All Services</option>
-                        {% for service in services %}
-                            <option value="{{ service.id }}" {% if service_filter == service.id|stringformat:"s" %}selected{% endif %}>
-                                {{ service.name }}
-                            </option>
-                        {% endfor %}
-                    </select>
-                </div>
-                
-                <div class="col-md-3">
-                    <label for="search" class="form-label">Search:</label>
-                    <input type="text" class="form-control" id="search" name="search" 
-                           value="{{ search_query }}" placeholder="Search payments...">
-                </div>
-                
-                <div class="col-md-2">
-                    <label class="form-label">&nbsp;</label>
-                    <div>
-                        <button type="submit" class="btn btn-primary">Filter</button>
-                        <a href="{% url 'payment_list' %}" class="btn btn-secondary">Reset</a>
-                    </div>
-                </div>
-            </form>
-
-            <!-- Payments Table -->
-            <div class="table-responsive">
-                <table class="table table-bordered" id="paymentsTable" width="100%" cellspacing="0">
-                    <thead>
-                        <tr>
-                            <th>Task ID</th>
-                            <th>Customer</th>
-                            <th>Assigned To</th>
-                            <th>Service Name</th>
-                            <th>Amount</th>
-                            <th>Payment Status</th>
-                            <th>Delivery Date</th>
-                            <!-- <th>Actions</th> -->
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for payment in payments %}
-                        <tr {% if payment.payment_status == 'pending' %}class="table-warning"{% elif payment.payment_status == 'paid' %}class="table-success"{% elif payment.payment_status == 'partial' %}class="table-info"{% endif %}>
-                            <td>
-                                <strong>{{ payment.task_id }}</strong>
-                            </td>
-                            <td>
-                                <div>
-                                    <strong>{{ payment.customer_name.customer_name }}</strong><br>
-                                    <small class="text-muted">{{ payment.customer_name.customer_phone }}</small>
-                                </div>
-                            </td>
-                            <td>{{ payment.assigned_to.employee_name }}</td>
-                            <td>{{ payment.service_name.name }}</td>
-                            <td>
-                                <strong class="text-primary">₹{{ payment.payment_amount }}</strong>
-                                {% if payment.balance_amount > 0 %}
-                                    <br><small class="text-danger">Balance: ₹{{ payment.balance_amount }}</small>
-                                {% endif %}
-                            </td>
-                            <td>
-                                <select class="form-select form-select-sm payment-status-select" data-payment-id="{{ payment.id }}">
-                                    <option value="pending" {% if payment.payment_status == 'pending' %}selected{% endif %}>Pending</option>
-                                    <option value="partial" {% if payment.payment_status == 'partial' %}selected{% endif %}>Partial</option>
-                                    <option value="paid" {% if payment.payment_status == 'paid' %}selected{% endif %}>Paid</option>
-                                </select>
-                            </td>
-                            <td>{{ payment.delivery_date|date:"d M, Y" }}</td>
-                            <!-- <td>
-                                <div class="btn-group" role="group">
-                                    <button type="button" class="btn btn-info btn-sm" onclick="viewPayment('{{ payment.id }}')" title="View Details">
-                                        <i class="fas fa-eye"></i>
-                                    </button>
-                                    <button type="button" class="btn btn-success btn-sm" onclick="printReceipt('{{ payment.id }}')" title="Print Receipt">
-                                        <i class="fas fa-print"></i>
-                                    </button>
-                                </div>
-                            </td> -->
-                        </tr>
-                        {% empty %}
-                        <tr>
-                            <td colspan="8" class="text-center">No payments found.</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-
-            <!-- Pagination -->
-            {% if payments.has_other_pages %}
-            <nav aria-label="Payments pagination">
-                <ul class="pagination justify-content-center">
-                    {% if payments.has_previous %}
-                        <li class="page-item">
-                            <a class="page-link" href="?page={{ payments.previous_page_number }}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if employee_filter %}&employee={{ employee_filter }}{% endif %}{% if service_filter %}&service={{ service_filter }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}">Previous</a>
-                        </li>
-                    {% endif %}
-                    
-                    {% for num in payments.paginator.page_range %}
-                        {% if payments.number == num %}
-                            <li class="page-item active">
-                                <span class="page-link">{{ num }}</span>
-                            </li>
-                        {% else %}
-                            <li class="page-item">
-                                <a class="page-link" href="?page={{ num }}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if employee_filter %}&employee={{ employee_filter }}{% endif %}{% if service_filter %}&service={{ service_filter }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}">{{ num }}</a>
-                            </li>
-                        {% endif %}
-                    {% endfor %}
-                    
-                    {% if payments.has_next %}
-                        <li class="page-item">
-                            <a class="page-link" href="?page={{ payments.next_page_number }}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if employee_filter %}&employee={{ employee_filter }}{% endif %}{% if service_filter %}&service={{ service_filter }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}">Next</a>
-                        </li>
-                    {% endif %}
-                </ul>
-            </nav>
-            {% endif %}
-        </div>
+    <!-- Payments Table -->
+    <div class="table-responsive">
+        <table class="table table-bordered" id="paymentsTable" width="100%" cellspacing="0">
+            <thead>
+                <tr>
+                    <th>Task ID</th>
+                    <th>Customer</th>
+                    <th>Assigned To</th>
+                    <th>Service Name</th>
+                    <th>Total Amount</th>
+                    <th>Amount Paid</th>
+                    <th>Balance</th>
+                    <th>Delivery Date</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for payment in payments %}
+                <tr class="payment-row {% if payment.percent_paid >= 100 %}paid-100{% elif payment.percent_paid >= 75 %}paid-75{% elif payment.percent_paid >= 50 %}paid-50{% elif payment.percent_paid >= 25 %}paid-25{% else %}paid-0{% endif %}">
+                    <td><strong>{{ payment.task_id }}</strong></td>
+                    <td>
+                        <div>
+                            <strong>{{ payment.customer_name.customer_name }}</strong><br>
+                            <small class="text-muted">{{ payment.customer_name.customer_phone }}</small>
+                        </div>
+                    </td>
+                    <td>{{ payment.assigned_to.employee_name }}</td>
+                    <td>{{ payment.service_name.name }}</td>
+                    <td class="text-end">₹{{ payment.payment_amount|floatformat:2 }}</td>
+                    <td class="text-end">₹{{ payment.amount_paid|floatformat:2 }}</td>
+                    <td class="text-end">₹{{ payment.balance_amount|floatformat:2 }}</td>
+                    <td>{{ payment.delivery_date|date:"d M, Y" }}</td>
+                    <td>
+                        <div class="btn-group" role="group">
+                            <button type="button" class="btn btn-info btn-sm" onclick="viewPayment('{{ payment.id }}')" title="View Details">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <a href="{% url 'edit_payment' payment.id %}" class="btn btn-primary btn-sm" title="Edit Payment">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="8" class="text-center">No payments found.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
+
 </div>
 
-<!-- Payment Detail Modal -->
-<div class="modal fade" id="paymentDetailModal" tabindex="-1" aria-labelledby="paymentDetailModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
+<!-- Edit Payment Modal -->
+<div class="modal fade" id="editPaymentModal" tabindex="-1" aria-labelledby="editPaymentModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-sm modal-dialog-centered">
         <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="paymentDetailModalLabel">
-                    <i class="fas fa-credit-card text-primary me-2"></i>Payment Details
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body" id="paymentDetailContent">
-                <!-- Content will be loaded here -->
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-primary" onclick="printReceiptFromModal()">
-                    <i class="fas fa-print"></i> Print Receipt
-                </button>
-            </div>
+            <form id="editPaymentForm" method="post" action="">
+                {% csrf_token %}
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editPaymentModalLabel"><i class="fas fa-edit me-2"></i>Edit Payment Status</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="edit_payment_id" name="payment_id" value="">
+                    <div class="mb-3">
+                        <label for="edit_payment_status" class="form-label">Payment Status</label>
+                        <select class="form-select" id="edit_payment_status" name="payment_status" required>
+                            <option value="paid">Fully Paid</option>
+                            <option value="partial">Partial Paid</option>
+                            <option value="pending">Pending</option>
+                        </select>
+                    </div>
+                    <div class="mb-3" id="edit_amount_paid_group" style="display:none;">
+                        <label for="edit_amount_paid" class="form-label">Amount Paid</label>
+                        <input type="number" min="0" step="0.01" class="form-control" id="edit_amount_paid" name="amount_paid" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_total_amount" class="form-label">Total Amount</label>
+                        <input type="number" class="form-control" id="edit_total_amount" disabled>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
 
 <script>
-// Update payment status
-document.querySelectorAll('.payment-status-select').forEach(select => {
-    select.addEventListener('change', function() {
-        const paymentId = this.dataset.paymentId;
-        const newStatus = this.value;
-        
-        fetch(`/payment/update-status/${paymentId}/`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value || ''
-            },
-            body: `status=${newStatus}`
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                location.reload();
-            } else {
-                alert('Error updating payment status: ' + data.error);
-                this.value = this.defaultValue; // Reset to original value
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Error updating payment status');
-            this.value = this.defaultValue; // Reset to original value
-        });
-    });
-});
+  // Show/hide Amount Paid input based on payment status selection
+  document.getElementById('edit_payment_status').addEventListener('change', function() {
+    const val = this.value;
+    const amountPaidGroup = document.getElementById('edit_amount_paid_group');
+    const amountPaidInput = document.getElementById('edit_amount_paid');
+    if (val === 'partial' || val === 'paid') {
+      amountPaidGroup.style.display = 'block';
+      amountPaidInput.required = true;
+    } else {
+      amountPaidGroup.style.display = 'none';
+      amountPaidInput.required = false;
+      amountPaidInput.value = '';
+    }
+  });
 
-// View payment details
-function viewPayment(paymentId) {
+  // Open edit modal and load payment details via API
+  function editPayment(paymentId) {
     fetch(`/payment/detail/${paymentId}/`)
-        .then(response => response.json())
-        .then(data => {
-            if (data.error) {
-                alert('Error: ' + data.error);
-                return;
-            }
-            
-            const content = `
-                <div class="row">
-                    <div class="col-md-6">
-                        <strong>Task ID:</strong><br>
-                        <span class="text-muted">${data.task_id}</span>
-                    </div>
-                    <div class="col-md-6">
-                        <strong>Payment Status:</strong><br>
-                        <span class="badge badge-${data.payment_status_value === 'paid' ? 'success' : data.payment_status_value === 'pending' ? 'warning' : 'info'}">${data.payment_status}</span>
-                    </div>
-                    <div class="col-md-6 mt-3">
-                        <strong>Customer:</strong><br>
-                        <span class="text-muted">${data.customer_name}</span><br>
-                        <small class="text-muted">${data.customer_phone}</small><br>
-                        <small class="text-muted">${data.customer_email}</small>
-                    </div>
-                    <div class="col-md-6 mt-3">
-                        <strong>Assigned To:</strong><br>
-                        <span class="text-muted">${data.assigned_to}</span>
-                    </div>
-                    <div class="col-md-6 mt-3">
-                        <strong>Service:</strong><br>
-                        <span class="text-muted">${data.service_name}</span>
-                    </div>
-                    <div class="col-md-6 mt-3">
-                        <strong>Delivery Date:</strong><br>
-                        <span class="text-muted">${new Date(data.delivery_date).toLocaleDateString()}</span>
-                    </div>
-                    <div class="col-md-6 mt-3">
-                        <strong>Payment Amount:</strong><br>
-                        <span class="text-success fw-bold fs-5">₹${data.payment_amount}</span>
-                    </div>
-                    <div class="col-md-6 mt-3">
-                        <strong>Balance Amount:</strong><br>
-                        <span class="text-${data.balance_amount > 0 ? 'danger' : 'success'} fw-bold">₹${data.balance_amount}</span>
-                    </div>
-                    <div class="col-md-6 mt-3">
-                        <strong>Task Status:</strong><br>
-                        <span class="badge badge-primary">${data.task_status}</span>
-                    </div>
-                    <div class="col-md-6 mt-3">
-                        <strong>Created Date:</strong><br>
-                        <span class="text-muted">${data.created_at}</span>
-                    </div>
-                    <div class="col-12 mt-3">
-                        <strong>Notes:</strong><br>
-                        <div class="p-2 bg-light rounded">
-                            <span class="text-muted">${data.task_notes}</span>
-                        </div>
-                    </div>
-                </div>
-            `;
-            
-            document.getElementById('paymentDetailContent').innerHTML = content;
-            document.getElementById('paymentDetailModal').setAttribute('data-payment-id', paymentId);
-            new bootstrap.Modal(document.getElementById('paymentDetailModal')).show();
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Error loading payment details');
-        });
-}
-
-// Print receipt
-function printReceipt(paymentId) {
-    window.open(`/payment/receipt/${paymentId}/`, '_blank');
-}
-
-function printReceiptFromModal() {
-    const paymentId = document.getElementById('paymentDetailModal').getAttribute('data-payment-id');
-    if (paymentId) {
-        printReceipt(paymentId);
-    }
-}
-
-// Export to CSV
-function exportToCSV() {
-    const table = document.getElementById('paymentsTable');
-    const rows = table.querySelectorAll('tr');
-    let csv = [];
-    
-    // Get headers
-    const headers = Array.from(rows[0].querySelectorAll('th')).slice(0, -1); // Exclude actions column
-    csv.push(headers.map(th => th.textContent.trim()).join(','));
-    
-    // Get data rows
-    for (let i = 1; i < rows.length; i++) {
-        const row = rows[i];
-        const cols = Array.from(row.querySelectorAll('td')).slice(0, -1); // Exclude actions column
-        if (cols.length > 0) {
-            csv.push(cols.map(td => `"${td.textContent.trim().replace(/"/g, '""')}"`).join(','));
+      .then(response => response.json())
+      .then(data => {
+        if (data.error) {
+          alert('Error: ' + data.error);
+          return;
         }
-    }
-    
-    // Download CSV
-    const csvContent = csv.join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'payments_report.csv';
-    a.click();
-    window.URL.revokeObjectURL(url);
-}
+        document.getElementById('edit_payment_id').value = paymentId;
+        const select = document.getElementById('edit_payment_status');
+        select.value = data.payment_status;
+        select.dispatchEvent(new Event('change'));
 
-// Print payments report
-function printPayments() {
-    window.print();
-}
+        if (data.amount_paid !== null) {
+          document.getElementById('edit_amount_paid').value = data.amount_paid;
+        } else {
+          document.getElementById('edit_amount_paid').value = '';
+        }
+        document.getElementById('edit_total_amount').value = data.payment_amount;
+        document.getElementById('editPaymentForm').action = `/payment/update-status/${paymentId}/`;
+        new bootstrap.Modal(document.getElementById('editPaymentModal')).show();
+      })
+      .catch(err => {
+        alert('Could not load payment details.');
+        console.error(err);
+      });
+  }
+
+  // Submit edit form with validation and AJAX
+  document.getElementById('editPaymentForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const paymentId = document.getElementById('edit_payment_id').value;
+    const payment_status = document.getElementById('edit_payment_status').value;
+    const amount_paid = document.getElementById('edit_amount_paid').value;
+    const total_amount = parseFloat(document.getElementById('edit_total_amount').value);
+
+    if ((payment_status === 'partial' || payment_status === 'paid') && (amount_paid === '' || parseFloat(amount_paid) > total_amount || parseFloat(amount_paid) < 0)) {
+      alert('Please enter a valid Amount Paid, not greater than Total Amount and >= 0.');
+      return;
+    }
+
+    const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+    fetch(`/payment/update-status/${paymentId}/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': csrftoken,
+      },
+      body: JSON.stringify({
+        payment_status: payment_status,
+        amount_paid: amount_paid
+      })
+    }).then(res => res.json())
+      .then(data => {
+        if(data.success) {
+          location.reload();
+        } else {
+          alert('Error updating payment status: ' + (data.error || 'Unknown error'));
+        }
+      }).catch(err => {
+        alert('Request failed');
+        console.error(err);
+      });
+  });
+
+  // Stub function for viewing payment details (implement as needed)
+  function viewPayment(paymentId) {
+    window.location.href = `/payment/view/${paymentId}/`; // Or implement modal or any UI as preferred
+  }
 </script>
 
 <style>
-.border-left-primary {
-    border-left: 0.25rem solid #4e73df !important;
-}
-
-.border-left-success {
-    border-left: 0.25rem solid #1cc88a !important;
-}
-
-.border-left-warning {
-    border-left: 0.25rem solid #f6c23e !important;
-}
-
-.border-left-info {
-    border-left: 0.25rem solid #36b9cc !important;
-}
-
-.table-success {
-    background-color: #d1edff !important;
-}
-
-.table-warning {
-    background-color: #fff3cd !important;
-}
-
-.table-info {
-    background-color: #d1ecf1 !important;
-}
-
-.payment-status-select {
-    min-width: 100px;
-}
-
-.badge {
-    font-size: 0.7em;
-}
-
-@media print {
-    .btn, .pagination, .card-header .dropdown {
-        display: none !important;
-    }
-    
-    .card {
-        border: none !important;
-        box-shadow: none !important;
-    }
-}
+  /* Row colors based on payment completion percentage */
+  .payment-row {
+    transition: background-color 0.3s ease;
+  }
+  .paid-100 {
+    background-color: #d4edda !important; /* green */
+  }
+  .paid-75 {
+    background-color: #d1ecf1 !important; /* light blue */
+  }
+  .paid-50 {
+    background-color: #fff3cd !important; /* yellow */
+  }
+  .paid-25 {
+    background-color: #ffe5d4 !important; /* light orange */
+  }
+  .paid-0 {
+    background-color: #f8d7da !important; /* light red */
+  }
 </style>
+
 {% endblock %}

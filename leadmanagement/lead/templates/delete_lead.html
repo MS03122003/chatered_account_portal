@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+
+{% block title %}Delete Lead{% endblock %}
+{% block page_title %}Delete Lead{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <h3>Delete Lead</h3>
+    <p>Are you sure you want to delete lead <strong>{{ lead.customer_name }}</strong> (ID: {{ lead.customer_id }})? This action cannot be undone.</p>
+
+    <form method="post">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-danger">Yes, Delete</button>
+        <a href="{% url 'all_leads' %}" class="btn btn-secondary ms-2">Cancel</a>
+    </form>
+</div>
+{% endblock %}

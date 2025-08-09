@@ -1,9 +1,13 @@
 from django.db import models
 from django.contrib.auth.models import User
+import os
+from decimal import Decimal
+
 
 class Employee(models.Model):
     employee_id = models.CharField(max_length=20, unique=True)
     employee_name = models.CharField(max_length=100)
+    designation = models.CharField(max_length=60,default="none")
     phone_number = models.CharField(max_length=15)
     email = models.EmailField()
     address = models.TextField()
@@ -34,6 +38,12 @@ class Service(models.Model):
         ordering = ['name']
 
 class Lead(models.Model):
+    LEAD_TYPE_CHOICES = [
+    ('customer', 'Customer'),
+    ('partner', 'Partner'),
+    ('vendor', 'Vendor'),
+    ('other', 'Other'),
+]
     customer_id = models.CharField(max_length=50, unique=True)
     customer_name = models.CharField(max_length=200)
     mobile_no = models.CharField(max_length=15)
@@ -52,12 +62,24 @@ class Lead(models.Model):
     note = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    lead_type = models.CharField(max_length=10, choices=LEAD_TYPE_CHOICES, default='customer')
+
+    
     
     def __str__(self):
         return f"{self.customer_name} - {self.customer_id}"
     
     class Meta:
         ordering = ['-created_at']
+
+def lead_document_upload_path(instance, filename):
+    """Generate upload path for lead documents"""
+    # Get file extension
+    ext = filename.split('.')[-1]
+    # Create new filename: customer_id_original_name.ext
+    new_filename = f"{instance.customer_id}_{filename}"
+    # Return the full path: documents/customer_id_filename.ext
+    return os.path.join('documents', new_filename)
 
 class LeadService(models.Model):
     lead = models.ForeignKey(Lead, on_delete=models.CASCADE, related_name='services')
@@ -71,12 +93,11 @@ class LeadService(models.Model):
     class Meta:
         unique_together = ['lead', 'service']
 
-# New Task Model
 class Task(models.Model):
     PAYMENT_STATUS_CHOICES = [
         ('paid', 'Paid'),
         ('pending', 'Pending'),
-        ('balance', 'Balance'),
+        ('partial', 'Partial Paid'),
     ]
     
     TASK_STATUS_CHOICES = [
@@ -92,38 +113,35 @@ class Task(models.Model):
     customer_name = models.ForeignKey(Lead, on_delete=models.CASCADE, related_name='customer_tasks')
     service_name = models.ForeignKey(Service, on_delete=models.CASCADE, related_name='service_tasks')
     delivery_date = models.DateField()
+
     payment_amount = models.DecimalField(max_digits=10, decimal_places=2)
+    amount_paid = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     payment_status = models.CharField(max_length=10, choices=PAYMENT_STATUS_CHOICES, default='pending')
     balance_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0.00, blank=True, null=True)
+
     task_notes = models.TextField(blank=True, null=True)
     task_status = models.CharField(max_length=15, choices=TASK_STATUS_CHOICES, default='assigned')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
     def save(self, *args, **kwargs):
+        # Generate task ID
         if not self.task_id:
-            # Generate task ID like TSK001, TSK002, etc.
             last_task = Task.objects.order_by('-id').first()
-            if last_task:
-                last_number = int(last_task.task_id[3:])
-                new_number = last_number + 1
-            else:
-                new_number = 1
+            new_number = int(last_task.task_id[3:]) + 1 if last_task else 1
             self.task_id = f"TSK{new_number:03d}"
-        
-        # If payment status is not balance, reset balance amount
-        if self.payment_status != 'balance':
-            self.balance_amount = 0.00
-            
+
+        # Auto calculate balance based on payment status and amount paid
+        if self.payment_status == 'paid':
+            self.amount_paid = self.payment_amount
+            self.balance_amount = Decimal('0.00')
+        elif self.payment_status == 'pending':
+            self.amount_paid = Decimal('0.00')
+            self.balance_amount = self.payment_amount
+        elif self.payment_status == 'partial':
+            self.balance_amount = max(self.payment_amount - self.amount_paid, Decimal('0.00'))
+
         super().save(*args, **kwargs)
     
     def __str__(self):
         return f"{self.task_id} - {self.customer_name.customer_name} - {self.service_name.name}"
-    
-    @property
-    def is_overdue(self):
-        from django.utils import timezone
-        return self.delivery_date < timezone.now().date() and self.task_status not in ['completed', 'cancelled']
-    
-    class Meta:
-        ordering = ['-created_at']
