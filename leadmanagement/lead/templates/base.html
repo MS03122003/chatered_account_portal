@@ -21,7 +21,6 @@
             --header-height: 60px;
             --transition-speed: 0.3s;
         }
-
         html, body {
             height: 100%;
             margin: 0;
@@ -31,12 +30,7 @@
             color: #4a4a4a;
             overflow-y: auto;
         }
-
-        .wrapper {
-            display: flex;
-            min-height: 100vh;
-        }
-
+        .wrapper { display: flex; min-height: 100vh; }
         .sidebar {
             width: var(--sidebar-width);
             background-color: var(--menu-bg);
@@ -52,7 +46,6 @@
             box-shadow: 2px 0 8px rgba(0, 0, 0, 0.12);
             transition: margin-left var(--transition-speed) ease;
         }
-
         .sidebar-heading {
             font-size: 2.1rem;
             font-weight: 700;
@@ -60,11 +53,7 @@
             margin-bottom: 38px;
             letter-spacing: 2px;
         }
-
-        .menu-list {
-            flex-grow: 1;
-        }
-
+        .menu-list { flex-grow: 1; }
         .menu-btn {
             display: flex;
             align-items: center;
@@ -80,32 +69,11 @@
             cursor: pointer;
             transition: background-color var(--transition-speed), color var(--transition-speed);
             text-align: left;
-            user-select: none;
         }
-
-        .menu-btn i {
-            margin-right: 15px;
-            font-size: 1.15rem;
-            width: 24px;
-            text-align: center;
-        }
-
-        .menu-btn:hover, .menu-btn:focus {
-            background-color: var(--menu-item-hover);
-            color: #fff;
-            outline: none;
-        }
-
-        .menu-btn.active {
-            background-color: var(--menu-highlight);
-            color: #fff;
-        }
-
-        .sidebar-footer {
-            margin-top: auto;
-            text-align: center;
-        }
-
+        .menu-btn i { margin-right: 15px; font-size: 1.15rem; width: 24px; text-align: center; }
+        .menu-btn:hover, .menu-btn:focus { background-color: var(--menu-item-hover); color: #fff; outline: none; }
+        .menu-btn.active { background-color: var(--menu-highlight); color: #fff; }
+        .sidebar-footer { margin-top: auto; text-align: center; }
         .logout-btn {
             width: 100%;
             background: transparent;
@@ -115,16 +83,10 @@
             padding: 12px 0;
             font-size: 1rem;
             font-weight: 600;
-            letter-spacing: 0.5px;
             cursor: pointer;
             transition: background-color var(--transition-speed), color var(--transition-speed);
         }
-
-        .logout-btn:hover {
-            background-color: #fff;
-            color: var(--menu-highlight);
-        }
-
+        .logout-btn:hover { background-color: #fff; color: var(--menu-highlight); }
         .main-content {
             margin-left: var(--sidebar-width);
             background: #fff;
@@ -132,9 +94,7 @@
             width: 100%;
             display: flex;
             flex-direction: column;
-            overflow: auto;
         }
-
         header.header {
             position: fixed;
             top: 0;
@@ -148,79 +108,17 @@
             justify-content: space-between;
             padding: 0 25px;
             z-index: 1200;
-            transition: left var(--transition-speed), width var(--transition-speed);
         }
-
-        #sidebarToggle {
-            background: none;
-            border: none;
-            font-size: 1.7rem;
-            color: var(--menu-bg);
-            cursor: pointer;
-            display: none;
-        }
-
-        .page-title {
-            font-size: 1.5rem;
-            font-weight: 600;
-            color: #212529;
-            user-select: none;
-        }
-
-        .header-right {
-            display: flex;
-            align-items: center;
-            gap: 20px;
-        }
-
-        .content-wrapper {
-            padding: calc(var(--header-height) + 25px) 30px 30px 30px;
-            flex-grow: 1;
-        }
-
-        /* Mobile responsiveness */
+        #sidebarToggle { background: none; border: none; font-size: 1.7rem; color: var(--menu-bg); cursor: pointer; display: none; }
+        .page-title { font-size: 1.5rem; font-weight: 600; color: #212529; }
+        .header-right { display: flex; align-items: center; gap: 20px; }
+        .content-wrapper { padding: calc(var(--header-height) + 25px) 30px 30px 30px; flex-grow: 1; }
         @media (max-width: 992px) {
-            .sidebar {
-                margin-left: -100vw;
-            }
-
-            .sidebar.open {
-                margin-left: 0;
-            }
-
-            .main-content {
-                margin-left: 0;
-            }
-
-            header.header {
-                left: 0;
-                width: 100%;
-            }
-
-            #sidebarToggle {
-                display: block;
-            }
-        }
-
-        @media (max-width: 600px) {
-            .sidebar {
-                padding: 18px 2px 18px;
-            }
-
-            .sidebar-heading {
-                font-size: 1.1rem;
-                margin-bottom: 12px;
-            }
-
-            .menu-btn,
-            .logout-btn {
-                font-size: 0.95rem;
-                padding: 9px 0;
-            }
-
-            .content-wrapper {
-                padding: calc(var(--header-height) + 12px) 8px 14px;
-            }
+            .sidebar { margin-left: -100vw; }
+            .sidebar.open { margin-left: 0; }
+            .main-content { margin-left: 0; }
+            header.header { left: 0; width: 100%; }
+            #sidebarToggle { display: block; }
         }
     </style>
     {% block extra_css %}{% endblock %}
@@ -236,37 +134,48 @@
                     <i class="fas fa-tachometer-alt"></i> Dashboard
                 </button>
             </a>
+
+            {% if request.session.role == 'admin' %}
             <a href="{% url 'new_lead' %}" class="text-decoration-none">
                 <button type="button" class="menu-btn {% if request.resolver_match.url_name == 'new_lead' %}active{% endif %}">
                     <i class="fas fa-user-plus"></i> New Leads
                 </button>
             </a>
+            {% endif %}
+
             <a href="{% url 'all_leads' %}" class="text-decoration-none">
                 <button type="button" class="menu-btn {% if request.resolver_match.url_name == 'all_leads' %}active{% endif %}">
                     <i class="fas fa-list-alt"></i> All Leads
                 </button>
             </a>
+
             <a href="{% url 'customer' %}" class="text-decoration-none">
                 <button type="button" class="menu-btn {% if request.resolver_match.url_name == 'customer' %}active{% endif %}">
                     <i class="fas fa-users"></i> Customer
                 </button>
             </a>
+
             <a href="{% url 'add_services' %}" class="text-decoration-none">
                 <button type="button" class="menu-btn {% if request.resolver_match.url_name == 'add_services' %}active{% endif %}">
                     <i class="fas fa-tools"></i> Add Services
                 </button>
             </a>
+
+            {% if request.session.role == 'admin' %}
             <a href="{% url 'add_employee' %}" class="text-decoration-none">
                 <button type="button" class="menu-btn {% if request.resolver_match.url_name == 'add_employee' %}active{% endif %}">
                     <i class="fas fa-user-tie"></i> Add Employee
                 </button>
             </a>
+
             <a href="{% url 'add_task' %}" class="text-decoration-none">
                 <button type="button" class="menu-btn {% if request.resolver_match.url_name == 'add_task' %}active{% endif %}">
                     <i class="fas fa-tasks"></i> Add Task
                 </button>
             </a>
+            {% endif %}
         </div>
+
         <div class="sidebar-footer">
             <form action="{% url 'logout' %}" method="post">
                 {% csrf_token %}
@@ -281,17 +190,15 @@
     <div class="main-content" id="mainContent">
         <!-- Header -->
         <header class="header" id="pageHeader">
-            <button id="sidebarToggle" aria-label="Toggle sidebar">
-                <i class="fas fa-bars"></i>
-            </button>
-            <div class="page-title">
-                {% block page_title %}Dashboard{% endblock %}
-            </div>
+            <button id="sidebarToggle" aria-label="Toggle sidebar"><i class="fas fa-bars"></i></button>
+            <div class="page-title">{% block page_title %}Dashboard{% endblock %}</div>
             <div class="header-right">
                 <div class="user-dropdown" id="userDropdown">
                     <a href="#" class="user-dropdown-toggle" id="userDropdownToggle" aria-haspopup="true" aria-expanded="false">
-                        <img src="https://ui-avatars.com/api/?name=Admin&background=random&rounded=true" alt="Admin avatar" style="width:40px; height:40px; border-radius:50%; border:2px solid #fe6902;" />
-                        Admin
+                        <img src="https://ui-avatars.com/api/?name={{ request.session.role|default:'User' }}&background=random&rounded=true"
+                             alt="User avatar"
+                             style="width:40px; height:40px; border-radius:50%; border:2px solid #fe6902;" />
+                        {{ request.session.role|capfirst }}
                         <i class="fas fa-caret-down ms-2"></i>
                     </a>
                     <div class="dropdown-menu" aria-labelledby="userDropdownToggle" id="dropdownMenu">
@@ -315,7 +222,7 @@
                 {% for message in messages %}
                     <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
                         {{ message }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                     </div>
                 {% endfor %}
             {% endif %}
@@ -326,33 +233,23 @@
 
 <!-- Bootstrap JS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-
 <script>
     const sidebar = document.getElementById('sidebarNav');
     const toggleBtn = document.getElementById('sidebarToggle');
-
-    toggleBtn.addEventListener('click', () => {
-        sidebar.classList.toggle('open');
-    });
-
+    toggleBtn.addEventListener('click', () => { sidebar.classList.toggle('open'); });
     document.addEventListener('click', function(event) {
-        if (window.innerWidth <= 992) {
-            if (!sidebar.contains(event.target) && !toggleBtn.contains(event.target)) {
-                sidebar.classList.remove('open');
-            }
+        if (window.innerWidth <= 992 && !sidebar.contains(event.target) && !toggleBtn.contains(event.target)) {
+            sidebar.classList.remove('open');
         }
     });
-
     const userDropdownToggle = document.getElementById('userDropdownToggle');
     const dropdownMenu = document.getElementById('dropdownMenu');
-
     userDropdownToggle.addEventListener('click', (e) => {
         e.preventDefault();
         dropdownMenu.classList.toggle('show');
         const expanded = userDropdownToggle.getAttribute('aria-expanded') === 'true';
         userDropdownToggle.setAttribute('aria-expanded', !expanded);
     });
-
     document.addEventListener('click', function(event) {
         if (!userDropdownToggle.contains(event.target) && !dropdownMenu.contains(event.target)) {
             dropdownMenu.classList.remove('show');
@@ -360,7 +257,6 @@
         }
     });
 </script>
-
 {% block extra_js %}{% endblock %}
 </body>
 </html>

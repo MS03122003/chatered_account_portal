@@ -2,18 +2,28 @@ from django.db import models
 from django.contrib.auth.models import User
 import os
 from decimal import Decimal
-
+from django.contrib.auth.hashers import make_password, check_password
 
 class Employee(models.Model):
     employee_id = models.CharField(max_length=20, unique=True)
     employee_name = models.CharField(max_length=100)
-    designation = models.CharField(max_length=60,default="none")
+    designation = models.CharField(max_length=60, default="none")
     phone_number = models.CharField(max_length=15)
     email = models.EmailField()
     address = models.TextField()
 
+    # New fields for login credentials
+    username = models.CharField(max_length=50, unique=True, null=True, blank=True)
+    password = models.CharField(max_length=128, null=True, blank=True)  # store hashed password
+
     def __str__(self):
         return f"{self.employee_name} ({self.employee_id})"
+
+    def set_password(self, raw_password):
+        self.password = make_password(raw_password)
+
+    def check_password(self, raw_password):
+        return check_password(raw_password, self.password)
 
 class Service(models.Model):
     CATEGORY_CHOICES = [

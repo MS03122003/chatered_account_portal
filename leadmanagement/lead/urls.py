@@ -30,6 +30,7 @@ urlpatterns = [
     # Employee management
     path('add-employee/', views.add_employee, name='add_employee'),
     path('employee_list/',views.employee_list, name='employee_list'),
+    path('employee/<int:employee_id>/view/', views.view_employee, name='view_employee'),
     path('employee/edit/<int:employee_id>/', views.edit_employee, name='edit_employee'),
     path('employee/delete/<int:employee_id>/', views.delete_employee, name='delete_employee'),
 
@@ -39,6 +40,8 @@ urlpatterns = [
     path('task/delete/<int:task_id>/', views.delete_task, name='delete_task'),
     path('task/detail/<int:task_id>/', views.task_detail, name='task_detail'),
     path('task/update-status/<int:task_id>/', views.update_task_status, name='update_task_status'),
+    path('get-customer-services/<int:customer_id>/', views.get_customer_services, name='get_customer_services'),
+    
 
      path('payments/', views.payment_list, name='payment_list'),
     path('payment/detail/<int:payment_id>/', views.payment_detail, name='payment_detail'),

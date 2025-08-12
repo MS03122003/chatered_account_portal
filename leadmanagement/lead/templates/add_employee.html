@@ -14,35 +14,56 @@
 
 <div class="form-card">
     <h2>Add Employee</h2>
+
     {% if error_message %}
         <div class="alert">{{ error_message }}</div>
     {% endif %}
+
     <form method="post" novalidate>
         {% csrf_token %}
         <div>
             <label>Employee ID</label>
             <input type="text" name="employee_id" value="{{ request.POST.employee_id|default_if_none:'' }}" class="form-control" required maxlength="20">
         </div>
+
         <div>
             <label>Employee Name</label>
             <input type="text" name="employee_name" value="{{ request.POST.employee_name|default_if_none:'' }}" class="form-control" required maxlength="100">
         </div>
+
         <div>
             <label>Designation</label>
             <input type="text" name="designation" value="{{ request.POST.designation|default_if_none:'' }}" class="form-control" maxlength="60">
         </div>
+
         <div>
             <label>Phone Number</label>
             <input type="text" name="phone_number" value="{{ request.POST.phone_number|default_if_none:'' }}" class="form-control" required maxlength="10" pattern="^\d{10,15}$" title="Enter a valid phone number (10-15 digits)">
         </div>
+
         <div>
             <label>Email</label>
-           <input type="email" name="email" value="{{ request.POST.email|default_if_none:'' }}" class="form-control">
+            <input type="email" name="email" value="{{ request.POST.email|default_if_none:'' }}" class="form-control" required>
         </div>
+
         <div>
             <label>Address</label>
-            <textarea name="address" class="form-control" rows="2" >{{ request.POST.address|default_if_none:'' }}</textarea>
+            <textarea name="address" class="form-control" rows="2">{{ request.POST.address|default_if_none:'' }}</textarea>
         </div>
+
+        <hr>
+
+        <!-- New Login Fields -->
+        <div>
+            <label>Username (For Employee Login)</label>
+            <input type="text" name="username" value="{{ request.POST.username|default_if_none:'' }}" class="form-control" required maxlength="50">
+        </div>
+
+        <div>
+            <label>Password (For Employee Login)</label>
+            <input type="password" name="password" class="form-control" required minlength="4" maxlength="50">
+        </div>
+
         <button type="submit" class="btn-main">Add Employee</button>
         <a href="{% url 'employee_list' %}" class="btn btn-secondary ms-2">Cancel</a>
     </form>

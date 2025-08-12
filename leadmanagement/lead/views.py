@@ -29,32 +29,130 @@ from django.db import transaction
 
 
 
-
 def login_view(request):
     if request.method == 'POST':
-        username = request.POST.get('username')
-        password = request.POST.get('password')
+        username = request.POST.get('username').strip()
+        password = request.POST.get('password').strip()
+
+        # hardcoded admin login
         if username == 'admin' and password == 'admin123':
-            return render(request, 'dashboard.html')
-        else:
-            return render(request, 'login.html', {'error': 'Invalid username or password'})
+            request.session['role'] = 'admin'
+            return redirect('dashboard')
+
+        # employee login check
+        try:
+            emp = Employee.objects.get(username=username)
+            if emp.check_password(password):
+                request.session['role'] = 'employee'
+                request.session['employee_id'] = emp.id
+                return redirect('dashboard')
+        except Employee.DoesNotExist:
+            pass
+
+        return render(request, 'login.html', {'error': 'Invalid username or password'})
+
     return render(request, 'login.html')
+
+def logout_view(request):
+    request.session.flush()  # clear all session data
+    return redirect('login')
+
 
 
 # Dashboard view
 
+# def dashboard(request):
+#     # Get search parameter
+#     search_query = request.GET.get('search', '').strip()
+    
+#     # Base queryset with all necessary joins
+#     tasks = Task.objects.select_related(
+#         'customer_name', 
+#         'assigned_to', 
+#         'service_name'
+#     ).all()
+    
+#     # Apply search filter if provided
+#     if search_query:
+#         tasks = tasks.filter(
+#             Q(customer_name__customer_name__icontains=search_query) |
+#             Q(customer_name__mobile_no__icontains=search_query) |
+#             Q(assigned_to__employee_name__icontains=search_query) |
+#             Q(assigned_to__phone_number__icontains=search_query) |
+#             Q(service_name__name__icontains=search_query) |
+#             Q(task_id__icontains=search_query) |
+#             Q(task_status__icontains=search_query) |
+#             Q(payment_status__icontains=search_query)
+#         )
+    
+#     # Order by creation date (newest first)
+#     tasks = tasks.order_by('-created_at')
+    
+#     # Pagination
+#     paginator = Paginator(tasks, 10)  # Show 10 records per page
+#     page_number = request.GET.get('page')
+#     tasks_page = paginator.get_page(page_number)
+    
+#     # Calculate dashboard statistics
+#     total_customers = Lead.objects.count()
+#     total_leads=Lead.objects.filter(lead_type='lead').count()
+#     total_tasks = Task.objects.count()
+#     completed_tasks = Task.objects.filter(task_status='completed').count()
+#     pending_tasks = Task.objects.filter(task_status__in=['assigned', 'in_progress']).count()
+    
+#     # Today's statistics
+#     today = timezone.now().date()
+#     today_tasks = Task.objects.filter(created_at__date=today).count()
+    
+#     # Overdue tasks
+#     overdue_tasks = Task.objects.filter(
+#         delivery_date__lt=today,
+#         task_status__in=['assigned', 'in_progress', 'on_hold']
+#     ).count()
+    
+#     # Payment statistics
+#     total_revenue = Task.objects.aggregate(Sum('payment_amount'))['payment_amount__sum'] or 0
+#     paid_amount = Task.objects.filter(payment_status='paid').aggregate(Sum('payment_amount'))['payment_amount__sum'] or 0
+#     pending_amount = Task.objects.filter(payment_status='pending').aggregate(Sum('payment_amount'))['payment_amount__sum'] or 0
+    
+#     context = {
+#         'tasks': tasks_page,
+#         'search_query': search_query,
+#         'total_customers': total_customers,
+#         'total_leads':total_leads,
+#         'total_tasks': total_tasks,
+#         'completed_tasks': completed_tasks,
+#         'pending_tasks': pending_tasks,
+#         'today_tasks': today_tasks,
+#         'overdue_tasks': overdue_tasks,
+#         'total_revenue': total_revenue,
+#         'paid_amount': paid_amount,
+#         'pending_amount': pending_amount,
+#     }
+    
+#     return render(request, 'dashboard.html',context)
+
 def dashboard(request):
-    # Get search parameter
+    # Ensure the user is logged in
+    role = request.session.get('role')
+    if not role:
+        return redirect('login')
+
     search_query = request.GET.get('search', '').strip()
-    
-    # Base queryset with all necessary joins
+
+    # Base QuerySet
     tasks = Task.objects.select_related(
-        'customer_name', 
-        'assigned_to', 
+        'customer_name',
+        'assigned_to',
         'service_name'
-    ).all()
-    
-    # Apply search filter if provided
+    )
+
+    # If employee, filter to only their tasks
+    if role == 'employee':
+        emp_id = request.session.get('employee_id')
+        tasks = tasks.filter(assigned_to_id=emp_id)
+
+    # Search filter
     if search_query:
         tasks = tasks.filter(
             Q(customer_name__customer_name__icontains=search_query) |
@@ -66,42 +164,54 @@ def dashboard(request):
             Q(task_status__icontains=search_query) |
             Q(payment_status__icontains=search_query)
         )
-    
-    # Order by creation date (newest first)
+
+    # Order by latest created
     tasks = tasks.order_by('-created_at')
-    
+
     # Pagination
-    paginator = Paginator(tasks, 10)  # Show 10 records per page
+    paginator = Paginator(tasks, 10)
     page_number = request.GET.get('page')
     tasks_page = paginator.get_page(page_number)
-    
-    # Calculate dashboard statistics
-    total_customers = Lead.objects.count()
-    total_leads=Lead.objects.filter(lead_type='lead').count()
-    total_tasks = Task.objects.count()
-    completed_tasks = Task.objects.filter(task_status='completed').count()
-    pending_tasks = Task.objects.filter(task_status__in=['assigned', 'in_progress']).count()
-    
-    # Today's statistics
+
+    # Stats — role-based
     today = timezone.now().date()
-    today_tasks = Task.objects.filter(created_at__date=today).count()
-    
-    # Overdue tasks
-    overdue_tasks = Task.objects.filter(
-        delivery_date__lt=today,
-        task_status__in=['assigned', 'in_progress', 'on_hold']
-    ).count()
-    
-    # Payment statistics
-    total_revenue = Task.objects.aggregate(Sum('payment_amount'))['payment_amount__sum'] or 0
-    paid_amount = Task.objects.filter(payment_status='paid').aggregate(Sum('payment_amount'))['payment_amount__sum'] or 0
-    pending_amount = Task.objects.filter(payment_status='pending').aggregate(Sum('payment_amount'))['payment_amount__sum'] or 0
-    
+
+    if role == 'admin':
+        total_customers = Lead.objects.count()
+        total_leads = Lead.objects.filter(lead_type='lead').count()
+        total_tasks = Task.objects.count()
+        completed_tasks = Task.objects.filter(task_status='completed').count()
+        pending_tasks = Task.objects.filter(task_status__in=['assigned', 'in_progress']).count()
+        today_tasks = Task.objects.filter(created_at__date=today).count()
+        overdue_tasks = Task.objects.filter(
+            delivery_date__lt=today,
+            task_status__in=['assigned', 'in_progress', 'on_hold']
+        ).count()
+        total_revenue = Task.objects.aggregate(Sum('payment_amount'))['payment_amount__sum'] or 0
+        paid_amount = Task.objects.filter(payment_status='paid').aggregate(Sum('payment_amount'))['payment_amount__sum'] or 0
+        pending_amount = Task.objects.filter(payment_status='pending').aggregate(Sum('payment_amount'))['payment_amount__sum'] or 0
+
+    else:  # EMPLOYEE
+        emp_id = request.session.get('employee_id')
+        total_customers = Lead.objects.filter(customer_tasks__assigned_to_id=emp_id).distinct().count()
+        total_leads = Lead.objects.filter(lead_type='lead', customer_tasks__assigned_to_id=emp_id).distinct().count()
+        total_tasks = tasks.count()
+        completed_tasks = tasks.filter(task_status='completed').count()
+        pending_tasks = tasks.filter(task_status__in=['assigned', 'in_progress']).count()
+        today_tasks = tasks.filter(created_at__date=today).count()
+        overdue_tasks = tasks.filter(
+            delivery_date__lt=today,
+            task_status__in=['assigned', 'in_progress', 'on_hold']
+        ).count()
+        total_revenue = tasks.aggregate(Sum('payment_amount'))['payment_amount__sum'] or 0
+        paid_amount = tasks.filter(payment_status='paid').aggregate(Sum('payment_amount'))['payment_amount__sum'] or 0
+        pending_amount = tasks.filter(payment_status='pending').aggregate(Sum('payment_amount'))['payment_amount__sum'] or 0
+
     context = {
         'tasks': tasks_page,
         'search_query': search_query,
         'total_customers': total_customers,
-        'total_leads':total_leads,
+        'total_leads': total_leads,
         'total_tasks': total_tasks,
         'completed_tasks': completed_tasks,
         'pending_tasks': pending_tasks,
@@ -110,9 +220,11 @@ def dashboard(request):
         'total_revenue': total_revenue,
         'paid_amount': paid_amount,
         'pending_amount': pending_amount,
+        'role': role  # send role to template to hide/show UI parts
     }
-    
-    return render(request, 'dashboard.html',context)
+
+    return render(request, 'dashboard.html', context)
+
 
 def add_services(request):
     services = Service.objects.all()
@@ -179,56 +291,80 @@ def get_service_price(request, service_id):
 def add_employee(request):
     error_message = ""
     if request.method == "POST":
-        # Get user inputs (strip to avoid spaces)
         employee_id = request.POST.get('employee_id', '').strip()
         employee_name = request.POST.get('employee_name', '').strip()
-        designation=request.POST.get('designation','').strip()
+        designation = request.POST.get('designation', '').strip()
         phone_number = request.POST.get('phone_number', '').strip()
         email = request.POST.get('email', '').strip()
         address = request.POST.get('address', '').strip()
+        username = request.POST.get('username', '').strip()
+        raw_password = request.POST.get('password', '').strip()
 
-        # Manual validation
-        if not all([employee_id, employee_name, phone_number, email]):
+        # validation
+        if not all([employee_id, employee_name, phone_number, email, username, raw_password]):
             error_message = "All fields are required!"
         elif Employee.objects.filter(employee_id=employee_id).exists():
             error_message = "Employee ID already exists!"
-        elif not phone_number.isdigit() or len(phone_number) < 7:
-            error_message = "Enter a valid phone number!"
-        elif '@' not in email or '.' not in email:
-            error_message = "Enter a valid email address!"
+        elif Employee.objects.filter(username=username).exists():
+            error_message = "Username already exists!"
         else:
-            Employee.objects.create(
+            emp = Employee(
                 employee_id=employee_id,
                 employee_name=employee_name,
                 designation=designation,
                 phone_number=phone_number,
                 email=email,
-                address=address
+                address=address,
+                username=username
             )
-            return redirect('employee_list')  # adjust to your employee list view name
+            emp.set_password(raw_password)
+            emp.save()
+            return redirect('employee_list')
 
     return render(request, "add_employee.html", {"error_message": error_message})
+
 # Employee List view
 def employee_list(request):
+    if request.session.get('role') != 'admin':
+        return redirect('dashboard')
     employees = Employee.objects.all().order_by('employee_id')
     return render(request, "employee_list.html", {"employees": employees})
 
-def edit_employee(request, employee_id):
+def view_employee(request, employee_id):
+    if request.session.get('role') != 'admin':
+        return redirect('dashboard')
+
     employee = get_object_or_404(Employee, pk=employee_id)
+    return render(request, 'view_employee.html', {'employee': employee})
+
+def edit_employee(request, employee_id):
+    if request.session.get('role') != 'admin':
+        return redirect('dashboard')
+
+    employee = get_object_or_404(Employee, pk=employee_id)
+
     if request.method == 'POST':
-        # Handle form submission here, e.g.:
-        # Update fields from request.POST
-        # employee.employee_name = request.POST.get('employee_name')
-        # employee.phone_number = request.POST.get('phone_number')
-        # etc.
-        # employee.save()
+        employee.employee_name = request.POST.get('employee_name', '').strip()
+        employee.designation = request.POST.get('designation', '').strip()
+        employee.phone_number = request.POST.get('phone_number', '').strip()
+        employee.email = request.POST.get('email', '').strip()
+        employee.address = request.POST.get('address', '').strip()
+        employee.username = request.POST.get('username', '').strip()
+
+        new_password = request.POST.get('password', '').strip()
+        if new_password:
+            employee.set_password(new_password)  # hash new password
+
+        employee.save()
         return redirect('employee_list')
-    else:
-        context = {'employee': employee}
-        return render(request, 'edit_employee.html', context)
+
+    return render(request, 'edit_employee.html', {'employee': employee})
     
 @require_POST
 def delete_employee(request, employee_id):
+    if request.session.get('role') != 'admin':
+        return redirect('dashboard')
+
     employee = get_object_or_404(Employee, pk=employee_id)
     employee.delete()
     return redirect('employee_list')
@@ -423,7 +559,7 @@ def customer_detail(request, customer_id):
         'created_at': customer.created_at.strftime('%d %B, %Y'),
     }
 
-    paginator = Paginator(customers, 10)  # Show 10 customers per page
+    paginator = Paginator(customer, 10)  # Show 10 customers per page
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
     
@@ -547,25 +683,160 @@ def view_customer(request, customer_id):
     
     return render(request, 'view_customer.html', context)  
 
-# Task management views (NEW)
+# # Task management views (NEW)
+# def add_task(request):
+#     if request.method == 'POST':
+#         try:
+#             # Fetch form data
+#             assigned_to_id = request.POST.get('assigned_to')
+#             customer_name_id = request.POST.get('customer_name')
+#             service_name_id = request.POST.get('service_name')
+#             delivery_date = request.POST.get('delivery_date')
+#             payment_amount = Decimal(request.POST.get('payment_amount') or 0)
+#             amount_paid = Decimal(request.POST.get('amount_paid') or 0)
+#             payment_status = request.POST.get('payment_status')
+#             task_notes = request.POST.get('task_notes', '')
+
+#             assigned_to = Employee.objects.get(id=assigned_to_id)
+#             customer = Lead.objects.get(id=customer_name_id)
+#             service = Service.objects.get(id=service_name_id)
+
+#             # Calculate balance
+#             if payment_status == 'paid':
+#                 amount_paid = payment_amount
+#                 balance_amount = Decimal('0.00')
+#             elif payment_status == 'pending':
+#                 amount_paid = Decimal('0.00')
+#                 balance_amount = payment_amount
+#             else:  # partial
+#                 balance_amount = max(payment_amount - amount_paid, Decimal('0.00'))
+
+#             # Save to DB
+#             task = Task.objects.create(
+#                 assigned_to=assigned_to,
+#                 customer_name=customer,
+#                 service_name=service,
+#                 delivery_date=delivery_date,
+#                 payment_amount=payment_amount,
+#                 amount_paid=amount_paid,
+#                 balance_amount=balance_amount,
+#                 payment_status=payment_status,
+#                 task_notes=task_notes
+#             )
+
+#             messages.success(request, f"Task {task.task_id} created successfully!")
+#             return redirect('payment_list')
+
+#         except Exception as e:
+#             messages.error(request, f"Error creating task: {e}")
+
+#     employees = Employee.objects.all().order_by('employee_name')
+#     customers = Lead.objects.all().order_by('customer_name')
+#     services = Service.objects.all().order_by('name')
+
+#     return render(request, 'add_task.html', {
+#         'employees': employees,
+#         'customers': customers,
+#         'services': services
+#     })
+
+def get_customer_services(request, customer_id):
+    """
+    API endpoint to get services for a specific customer
+    """
+    try:
+        customer = get_object_or_404(Lead, id=customer_id)
+        
+        # Get all services for this customer from LeadService model
+        customer_services = LeadService.objects.filter(lead=customer).select_related('service')
+        
+        services_data = []
+        total_amount = 0
+        
+        for lead_service in customer_services:
+            service_data = {
+                'service_id': lead_service.service.id,
+                'service_name': lead_service.service.name,
+                'service_category': lead_service.service.category,
+                'service_price': float(lead_service.service_price)
+            }
+            services_data.append(service_data)
+            total_amount += float(lead_service.service_price)
+        
+        return JsonResponse({
+            'success': True,
+            'customer_name': customer.customer_name,
+            'customer_id': customer.customer_id,
+            'services': services_data,
+            'total_amount': total_amount
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        })
 def add_task(request):
     if request.method == 'POST':
         try:
             # Fetch form data
             assigned_to_id = request.POST.get('assigned_to')
             customer_name_id = request.POST.get('customer_name')
-            service_name_id = request.POST.get('service_name')
             delivery_date = request.POST.get('delivery_date')
             payment_amount = Decimal(request.POST.get('payment_amount') or 0)
             amount_paid = Decimal(request.POST.get('amount_paid') or 0)
             payment_status = request.POST.get('payment_status')
             task_notes = request.POST.get('task_notes', '')
 
+            # Handle service selection - check both general and customer services
+            general_service_id = request.POST.get('service_name')
+            customer_service_id = request.POST.get('selected_customer_service')
+            
+            # Get employee and customer
             assigned_to = Employee.objects.get(id=assigned_to_id)
             customer = Lead.objects.get(id=customer_name_id)
-            service = Service.objects.get(id=service_name_id)
+            
+            # Determine which service was selected and get service details
+            selected_service = None
+            service_price = payment_amount  # Default to form amount
+            
+            if customer_service_id:
+                # Customer service was selected - find it in customer's services
+                if hasattr(customer, 'selected_services') and customer.selected_services:
+                    try:
+                        services_data = json.loads(customer.selected_services) if isinstance(customer.selected_services, str) else customer.selected_services
+                        
+                        # Find the selected service in customer's services
+                        for service_data in services_data:
+                            if str(service_data['id']) == str(customer_service_id):
+                                selected_service = Service.objects.get(id=service_data['id'])
+                                service_price = Decimal(str(service_data['price']))
+                                break
+                    except (json.JSONDecodeError, Service.DoesNotExist, KeyError):
+                        pass
+                
+                # Fallback: treat customer_service_id as a regular service ID
+                if not selected_service:
+                    try:
+                        selected_service = Service.objects.get(id=customer_service_id)
+                        service_price = Decimal(str(selected_service.base_price))
+                    except Service.DoesNotExist:
+                        pass
+                        
+            elif general_service_id:
+                # General service was selected
+                try:
+                    selected_service = Service.objects.get(id=general_service_id)
+                    service_price = Decimal(str(selected_service.base_price))
+                except Service.DoesNotExist:
+                    pass
+            
+            # Validate service selection
+            if not selected_service:
+                messages.error(request, 'Please select a valid service.')
+                return redirect('add_task')
 
-            # Calculate balance
+            # Calculate balance based on payment status
             if payment_status == 'paid':
                 amount_paid = payment_amount
                 balance_amount = Decimal('0.00')
@@ -579,7 +850,7 @@ def add_task(request):
             task = Task.objects.create(
                 assigned_to=assigned_to,
                 customer_name=customer,
-                service_name=service,
+                service_name=selected_service,
                 delivery_date=delivery_date,
                 payment_amount=payment_amount,
                 amount_paid=amount_paid,
@@ -591,9 +862,14 @@ def add_task(request):
             messages.success(request, f"Task {task.task_id} created successfully!")
             return redirect('payment_list')
 
+        except (Employee.DoesNotExist, Lead.DoesNotExist, Service.DoesNotExist) as e:
+            messages.error(request, f"Selected item not found: {e}")
+            return redirect('add_task')
         except Exception as e:
             messages.error(request, f"Error creating task: {e}")
+            return redirect('add_task')
 
+    # GET request - show the form
     employees = Employee.objects.all().order_by('employee_name')
     customers = Lead.objects.all().order_by('customer_name')
     services = Service.objects.all().order_by('name')
@@ -603,6 +879,7 @@ def add_task(request):
         'customers': customers,
         'services': services
     })
+
 
 def task_list(request):
     # Get filter parameters
